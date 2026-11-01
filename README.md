@@ -18,10 +18,10 @@ WPF / .NET 10，无边框深色界面，单文件发布，不需要管理员权�
 
 ```
 CSNZ  <gameDir>\Bin\CSOLauncher.exe -ip <ip> -port <port> -login <u> -password <p> [-disableauthui]
-CSO2  <gameDir>\Bin\launcher.exe    -masterip <ip> -enablecustom -decryptedfiles -username <u> -password <p>
+CSO2  <gameDir>\Bin\launcher.exe    -masterip <ip> -masterport <port> -enablecustom -decryptedfiles -username <u> -password <p>
 ```
 
-CSO2 的客户端只认 `-masterip`，端口仅用于启动前的连通性探测。
+两个游戏的端口都会传给客户端，同时也是每秒连通性探测的目标端口。
 
 ## 目录结构
 

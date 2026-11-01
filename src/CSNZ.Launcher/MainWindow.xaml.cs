@@ -551,6 +551,8 @@ public partial class MainWindow : Window
         {
             info.ArgumentList.Add("-masterip");
             info.ArgumentList.Add(profile.Ip);
+            info.ArgumentList.Add("-masterport");
+            info.ArgumentList.Add(profile.Port.ToString(CultureInfo.InvariantCulture));
 
             if (cso2.EnableCustom)
             {

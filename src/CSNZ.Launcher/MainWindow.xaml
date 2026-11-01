@@ -491,11 +491,12 @@
                             <TextBlock Text="私人服务器启动器 · 接入即战" FontSize="13.5" Foreground="#AAB5C0" Margin="0,12,0,0"/>
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1" Text="Counter-Strike: Online" FontFamily="Consolas" FontSize="10"
-                                   Foreground="#38FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                   IsHitTestVisible="False">
-                            <TextBlock.RenderTransform><RotateTransform Angle="90"/></TextBlock.RenderTransform>
-                        </TextBlock>
+                        <Grid Grid.Row="1" Width="26" HorizontalAlignment="Right" IsHitTestVisible="False">
+                            <TextBlock Text="Counter-Strike: Online" FontFamily="Consolas" FontSize="10"
+                                       Foreground="#38FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.LayoutTransform><RotateTransform Angle="90"/></TextBlock.LayoutTransform>
+                            </TextBlock>
+                        </Grid>
 
                         <Border Grid.Row="2" BorderBrush="#17FFFFFF" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                             <StackPanel Orientation="Horizontal">
@@ -534,14 +535,15 @@
                             <Rectangle Width="64" Height="4" Fill="#FF6A00" HorizontalAlignment="Left" Margin="0,6,0,0">
                                 <Rectangle.Effect><DropShadowEffect Color="#FF6A00" BlurRadius="18" ShadowDepth="0" Opacity="0.85"/></Rectangle.Effect>
                             </Rectangle>
-                            <TextBlock Text="经典续作 · 本地私服启动" FontSize="13.5" Foreground="#AAB5C0" Margin="0,12,0,0"/>
+                            <TextBlock Text="私人服务器启动器 · 接入即战" FontSize="13.5" Foreground="#AAB5C0" Margin="0,12,0,0"/>
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1" Text="Counter-Strike: Online 2" FontFamily="Consolas" FontSize="10"
-                                   Foreground="#38FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                   IsHitTestVisible="False">
-                            <TextBlock.RenderTransform><RotateTransform Angle="90"/></TextBlock.RenderTransform>
-                        </TextBlock>
+                        <Grid Grid.Row="1" Width="26" HorizontalAlignment="Right" IsHitTestVisible="False">
+                            <TextBlock Text="Counter-Strike: Online 2" FontFamily="Consolas" FontSize="10"
+                                       Foreground="#38FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.LayoutTransform><RotateTransform Angle="90"/></TextBlock.LayoutTransform>
+                            </TextBlock>
+                        </Grid>
 
                         <Border Grid.Row="2" BorderBrush="#17FFFFFF" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                             <StackPanel Orientation="Horizontal">

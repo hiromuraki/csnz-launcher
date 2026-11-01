@@ -1,0 +1,34 @@
+# 本仓库只放启动器源码；游戏本体、服务端、本地部署脚本不进版本库
+/Bin/
+/Data/
+/Server/
+/CSNZ.Launcher.exe
+/launcher.json
+/启动游戏.bat
+/启动游戏.ps1
+/启动主服务器.bat
+/启动主服务器.ps1
+
+# 构建产物（参考 github/gitignore 的 VisualStudio 模板）
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+/dist/
+/Launcher/publish/
+*.user
+*.suo
+*.pdb
+*.cache
+*.log
+*.tlog
+
+# IDE / 系统
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

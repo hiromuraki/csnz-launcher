@@ -1,0 +1,731 @@
+<Window x:Class="CSNZ.Launcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CSNZ 启动器"
+        Icon="app.ico"
+        Width="1044"
+        Height="640"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#0B0D10"
+        FontFamily="Microsoft YaHei UI"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+
+        <!-- ===== 纹理 ===== -->
+        <DrawingBrush x:Key="GridBrush" TileMode="Tile" Viewport="0,0,52,52" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#14FFFFFF" Thickness="1"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="0,0" EndPoint="52,0"/>
+                            <LineGeometry StartPoint="0,0" EndPoint="0,52"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <DrawingBrush x:Key="ScanBrush" TileMode="Tile" Viewport="0,0,1,3" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <GeometryDrawing Brush="#0AFFFFFF">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,1,1"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <DrawingBrush x:Key="StripeBrush" TileMode="Tile" Viewport="0,0,18,18" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#26FF6A00" Thickness="2"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="0,18" EndPoint="18,0"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <!-- ===== 文字 ===== -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#8A949F"/>
+        </Style>
+
+        <Style x:Key="MonoLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Foreground" Value="#6F7B87"/>
+        </Style>
+
+        <!-- ===== 输入框 ===== -->
+        <Style x:Key="FieldBox" TargetType="TextBox">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Background" Value="#0C1014"/>
+            <Setter Property="Foreground" Value="#EAF0F6"/>
+            <Setter Property="CaretBrush" Value="#FF8A3D"/>
+            <Setter Property="SelectionBrush" Value="#B3FF6A00"/>
+            <Setter Property="BorderBrush" Value="#2A333C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#3A4550"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF6A00"/>
+                                <Setter TargetName="Bd" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FF6A00" BlurRadius="9" ShadowDepth="0" Opacity="0.55"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldPasswordBox" TargetType="PasswordBox">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Background" Value="#0C1014"/>
+            <Setter Property="Foreground" Value="#EAF0F6"/>
+            <Setter Property="CaretBrush" Value="#FF8A3D"/>
+            <Setter Property="SelectionBrush" Value="#B3FF6A00"/>
+            <Setter Property="BorderBrush" Value="#2A333C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#3A4550"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF6A00"/>
+                                <Setter TargetName="Bd" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FF6A00" BlurRadius="9" ShadowDepth="0" Opacity="0.55"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 开关 ===== -->
+        <Style x:Key="SwitchCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#B3BDC8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <Border x:Name="Track" Width="36" Height="20" CornerRadius="2"
+                                    Background="#1B2229" BorderBrush="#333D47" BorderThickness="1">
+                                <Border x:Name="Knob" Width="12" Height="12" CornerRadius="1"
+                                        Background="#6D7885" HorizontalAlignment="Left" Margin="3,0,0,0">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                            <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#FF8A3D"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#2EFF6A00"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#FF6A00"/>
+                                <Setter TargetName="Knob" Property="Background" Value="#FF6A00"/>
+                                <Setter TargetName="Knob" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FF6A00" BlurRadius="8" ShadowDepth="0" Opacity="0.9"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Knob"
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                                             To="16" Duration="0:0:0.16"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Knob"
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                                             To="0" Duration="0:0:0.16"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 主按钮（切角） ===== -->
+        <Style x:Key="LaunchButton" TargetType="Button">
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="Foreground" Value="#150A06"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FF7D22" Offset="0"/>
+                        <GradientStop Color="#FF4D00" Offset="0.52"/>
+                        <GradientStop Color="#D94100" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root">
+                            <Path Data="M0,0 L0.956,0 L1,0.27 L1,1 L0.044,1 L0,0.73 Z"
+                                  Stretch="Fill"
+                                  Fill="{TemplateBinding Background}">
+                                <Path.Effect>
+                                    <DropShadowEffect Color="#FF4D00" BlurRadius="24" ShadowDepth="0" Opacity="0.45"/>
+                                </Path.Effect>
+                            </Path>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#FF8F3C" Offset="0"/>
+                                            <GradientStop Color="#FF5D0F" Offset="0.52"/>
+                                            <GradientStop Color="#E94B00" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 次按钮 ===== -->
+        <Style x:Key="GhostButton" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Foreground" Value="#98A3AE"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#05FFFFFF" BorderBrush="#2C353E"
+                                BorderThickness="1" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF6A00"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#10FF6A00"/>
+                                <Setter Property="Foreground" Value="#FFB27A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 标题栏按钮 ===== -->
+        <Style x:Key="TitleButton" TargetType="Button">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="#7D8894"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#0F1317" BorderBrush="#2C343D"
+                                BorderThickness="1" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#3D4853"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#171D23"/>
+                                <Setter Property="Foreground" Value="#E8EEF4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource TitleButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#0F1317" BorderBrush="#2C343D"
+                                BorderThickness="1" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#C02B2B"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#C02B2B"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 图标按钮（密码可见） ===== -->
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#65707C"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#FF8A3D"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== 小按钮（检测） ===== -->
+        <Style x:Key="MiniButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#6F7B87"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" BorderBrush="#2C353E"
+                                BorderThickness="1" CornerRadius="2" Padding="6,1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF6A00"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#10FF6A00"/>
+                                <Setter Property="Foreground" Value="#FFB27A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1FFF6A00"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Border BorderBrush="#2F373F" BorderThickness="1" Background="#0B0D10">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="30"/>
+            </Grid.RowDefinitions>
+
+            <!-- ============ 标题栏 ============ -->
+            <Border Grid.Row="0"
+                    BorderBrush="#262E36"
+                    BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#1A2027" Offset="0"/>
+                        <GradientStop Color="#131820" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid Margin="15,0,12,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Canvas Width="22" Height="22" Margin="0,0,11,0">
+                            <Ellipse Width="15" Height="15" Canvas.Left="3.5" Canvas.Top="3.5"
+                                     Stroke="#FF6A00" StrokeThickness="1.6"/>
+                            <Ellipse Width="4.6" Height="4.6" Canvas.Left="8.7" Canvas.Top="8.7"
+                                     Stroke="#FF6A00" StrokeThickness="1.6"/>
+                            <Line X1="11" Y1="0.8" X2="11" Y2="4.2" Stroke="#FF6A00" StrokeThickness="1.6"/>
+                            <Line X1="11" Y1="17.8" X2="11" Y2="21.2" Stroke="#FF6A00" StrokeThickness="1.6"/>
+                            <Line X1="0.8" Y1="11" X2="4.2" Y2="11" Stroke="#FF6A00" StrokeThickness="1.6"/>
+                            <Line X1="17.8" Y1="11" X2="21.2" Y2="11" Stroke="#FF6A00" StrokeThickness="1.6"/>
+                        </Canvas>
+                        <TextBlock Text="CSNZ" FontFamily="Bahnschrift, Segoe UI" FontSize="12"
+                                   FontWeight="Bold" Foreground="#EEF3F8" VerticalAlignment="Center"/>
+                        <TextBlock Text="LAUNCHER" FontFamily="Bahnschrift, Segoe UI" FontSize="12"
+                                   Foreground="#6F7B87" Margin="9,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock Text="BUILD 43 · 2025" FontFamily="Consolas" FontSize="10"
+                                   Foreground="#67727E" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Button Style="{StaticResource TitleButton}" Click="Minimize_Click" ToolTip="最小化">
+                            <Rectangle Width="9" Height="1.4" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                        <Button Style="{StaticResource CloseButton}" Click="Close_Click" ToolTip="关闭">
+                            <Path Data="M0,0 L9,9 M9,0 L0,9"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.3"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ============ 主体 ============ -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="402"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ===== 左侧海报区 ===== -->
+                <Grid Grid.Column="0" ClipToBounds="True">
+                    <Grid.Background>
+                        <RadialGradientBrush GradientOrigin="0.16,0.1" Center="0.16,0.1" RadiusX="1.15" RadiusY="1.0">
+                            <GradientStop Color="#1C242C" Offset="0"/>
+                            <GradientStop Color="#11161B" Offset="0.55"/>
+                            <GradientStop Color="#0A0D10" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Grid.Background>
+
+                    <Rectangle Fill="{StaticResource GridBrush}" IsHitTestVisible="False">
+                        <Rectangle.OpacityMask>
+                            <RadialGradientBrush GradientOrigin="0.28,0.18" Center="0.28,0.18" RadiusX="0.9" RadiusY="0.8">
+                                <GradientStop Color="#FFFFFFFF" Offset="0.05"/>
+                                <GradientStop Color="#00FFFFFF" Offset="0.85"/>
+                            </RadialGradientBrush>
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+
+                    <Rectangle Fill="{StaticResource ScanBrush}" IsHitTestVisible="False"/>
+
+                    <Rectangle Width="210" HorizontalAlignment="Right"
+                               Fill="{StaticResource StripeBrush}" Opacity="0.62" IsHitTestVisible="False">
+                        <Rectangle.OpacityMask>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#00FFFFFF" Offset="0"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.45"/>
+                            </LinearGradientBrush>
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+
+                    <Canvas Width="340" Height="340" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Margin="0,0,-40,-40" Opacity="0.1" IsHitTestVisible="False">
+                        <Ellipse Width="300" Height="300" Canvas.Left="20" Canvas.Top="20" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Ellipse Width="200" Height="200" Canvas.Left="70" Canvas.Top="70" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Ellipse Width="84" Height="84" Canvas.Left="128" Canvas.Top="128" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Line X1="170" Y1="0" X2="170" Y2="60" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Line X1="170" Y1="280" X2="170" Y2="340" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Line X1="0" Y1="170" X2="60" Y2="170" Stroke="#FFFFFF" StrokeThickness="1"/>
+                        <Line X1="280" Y1="170" X2="340" Y2="170" Stroke="#FFFFFF" StrokeThickness="1"/>
+                    </Canvas>
+
+                    <TextBlock Text="Counter-Strike: Online"
+                               FontFamily="Consolas" FontSize="10" Foreground="#38FFFFFF"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Margin="0,0,14,0" IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <Grid Margin="34,30,34,26">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- 品牌 -->
+                        <StackPanel Grid.Row="0" Margin="0,46,0,0">
+                            <TextBlock Text="COUNTER-STRIKE ONLINE" FontFamily="Consolas" FontSize="11" Foreground="#8A949F"/>
+                            <TextBlock FontFamily="Bahnschrift, Segoe UI" FontSize="92" FontWeight="Bold"
+                                       Foreground="#F4F7FA" LineHeight="98"
+                                       LineStackingStrategy="BlockLineHeight" Margin="0,2,0,0">
+                                <Run Text="CS"/><Run Text="N" Foreground="#FF6A00"/><Run Text="Z"/>
+                            </TextBlock>
+                            <Rectangle Width="64" Height="4" Fill="#FF6A00" HorizontalAlignment="Left" Margin="0,8,0,0">
+                                <Rectangle.Effect>
+                                    <DropShadowEffect Color="#FF6A00" BlurRadius="18" ShadowDepth="0" Opacity="0.85"/>
+                                </Rectangle.Effect>
+                            </Rectangle>
+                            <TextBlock Text="私人服务器启动器 · 接入即战" FontSize="13.5" Foreground="#AAB5C0" Margin="0,13,0,0"/>
+                        </StackPanel>
+
+                        <!-- 读数条 -->
+                        <Border Grid.Row="2" BorderBrush="#17FFFFFF" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,30,0">
+                                    <TextBlock Text="TARGET" FontFamily="Consolas" FontSize="9" Foreground="#67727E"/>
+                                    <TextBlock x:Name="TargetText" Text="127.0.0.1 : 30002"
+                                               FontFamily="Consolas" FontSize="12" Foreground="#DFE7EF" Margin="0,5,0,0"/>
+                                </StackPanel>
+                                <StackPanel Width="190" Margin="0,0,26,0">
+                                    <TextBlock Text="CLIENT" FontFamily="Consolas" FontSize="9" Foreground="#67727E"/>
+                                    <TextBlock x:Name="ClientPathText" Text="Bin\CSOLauncher.exe"
+                                               FontFamily="Consolas" FontSize="12" Foreground="#DFE7EF"
+                                               Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="LINK" FontFamily="Consolas" FontSize="9" Foreground="#67727E"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <TextBlock x:Name="PingText" Text="待检测" FontFamily="Consolas" FontSize="12"
+                                                   AutomationProperties.AutomationId="PingText"
+                                                   Foreground="#87929D" VerticalAlignment="Center"/>
+                                        <Button x:Name="PingButton" Content="检测" Style="{StaticResource MiniButton}"
+                                                AutomationProperties.AutomationId="PingButton"
+                                                Margin="10,0,0,0" VerticalAlignment="Center"
+                                                Click="Ping_Click" ToolTip="立即检测服务器连通性"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- ===== 右侧表单 ===== -->
+                <Border Grid.Column="1" BorderBrush="#262E36" BorderThickness="1,0,0,0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#151A20" Offset="0"/>
+                            <GradientStop Color="#0F1318" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+
+                    <Grid>
+                        <Rectangle Width="1" Height="88" HorizontalAlignment="Left" VerticalAlignment="Top">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#FF6A00" Offset="0"/>
+                                    <GradientStop Color="#00FF6A00" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <Grid Margin="24,24,24,16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 表单标题 -->
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="// 服务器与账号" FontFamily="Consolas" FontSize="10" Foreground="#727D89"/>
+                                <TextBlock Text="本地 · LOCAL" FontFamily="Consolas" FontSize="10" Foreground="#FF8A3D"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <!-- IP / 端口 -->
+                            <Grid Grid.Row="1" Margin="0,13,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="108"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="IP 地址" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="IpBox" Style="{StaticResource FieldBox}" Text="127.0.0.1" AutomationProperties.AutomationId="IpBox"
+                                             FontFamily="Consolas" Margin="0,6,0,0" TextChanged="Endpoint_TextChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                    <TextBlock Text="端口" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="PortBox" Style="{StaticResource FieldBox}" Text="30002" MaxLength="5" AutomationProperties.AutomationId="PortBox"
+                                             FontFamily="Consolas" Margin="0,6,0,0" TextChanged="Endpoint_TextChanged"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 用户名 -->
+                            <StackPanel Grid.Row="2" Margin="0,13,0,0">
+                                <TextBlock Text="用户名" Style="{StaticResource FieldLabel}"/>
+                                <TextBox x:Name="LoginBox" Style="{StaticResource FieldBox}" Margin="0,6,0,0" AutomationProperties.AutomationId="LoginBox"/>
+                            </StackPanel>
+
+                            <!-- 密码 -->
+                            <StackPanel Grid.Row="3" Margin="0,13,0,0">
+                                <TextBlock Text="密码" Style="{StaticResource FieldLabel}"/>
+                                <Grid Margin="0,6,0,0">
+                                    <PasswordBox x:Name="PasswordBox" Style="{StaticResource FieldPasswordBox}"
+                                                 Padding="11,0,38,0" PasswordChar="●"/>
+                                    <TextBox x:Name="PasswordText" Style="{StaticResource FieldBox}" Visibility="Collapsed"
+                                             Padding="11,0,38,0" TextChanged="PasswordText_TextChanged"/>
+                                    <Button x:Name="EyeButton" Style="{StaticResource IconButton}"
+                                            Width="34" Height="34" HorizontalAlignment="Right"
+                                            VerticalAlignment="Center" Margin="0,0,2,0"
+                                            Click="Eye_Click" ToolTip="显示 / 隐藏密码">
+                                        <Grid Width="18" Height="18">
+                                            <Path Data="M1,9 C4,3.4 14,3.4 17,9 C14,14.6 4,14.6 1,9 Z"
+                                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                  StrokeThickness="1.3" Fill="Transparent"/>
+                                            <Ellipse Width="4.6" Height="4.6"
+                                                     Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                     StrokeThickness="1.3"/>
+                                        </Grid>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- 跳过登录框 -->
+                            <Grid Grid.Row="4" Margin="0,13,0,0">
+                                <CheckBox x:Name="DisableAuthUiCheckBox" Style="{StaticResource SwitchCheckBox}"
+                                          Content="跳过游戏内登录框" VerticalAlignment="Center"/>
+                                <TextBlock FontFamily="Consolas" FontSize="9" Foreground="#5D6873"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="AUTH UI ON"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=DisableAuthUiCheckBox}" Value="True">
+                                                    <Setter Property="Text" Value="AUTH UI OFF"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+
+                            <!-- 修复 DPI -->
+                            <Grid Grid.Row="5" Margin="0,10,0,0">
+                                <CheckBox x:Name="FixDpiCheckBox" Style="{StaticResource SwitchCheckBox}"
+                                          AutomationProperties.AutomationId="FixDpiCheckBox"
+                                          Content="修复 DPI" VerticalAlignment="Center"
+                                          ToolTip="启动游戏前写入高 DPI 兼容性设置，避免老程序在非 100% 缩放下发虚"/>
+                                <TextBlock x:Name="DpiScaleText" AutomationProperties.AutomationId="DpiScaleText" FontFamily="Consolas" FontSize="9"
+                                           Foreground="#5D6873" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           ToolTip="当前显示器缩放比例"/>
+                            </Grid>
+
+                            <!-- 启动 -->
+                            <Button x:Name="StartButton" Grid.Row="6" Style="{StaticResource LaunchButton}" AutomationProperties.AutomationId="StartButton"
+                                    Margin="0,14,0,0" IsDefault="True" Click="StartButton_Click">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="启动游戏" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Path Data="M0,6 H12.5 M7.5,1 L12.5,6 L7.5,11" Stroke="#150A06" StrokeThickness="2.2"
+                                          Margin="11,2,0,0" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 次操作 -->
+                            <Button x:Name="OpenDirButton" Grid.Row="7" Content="打开游戏目录"
+                                    Style="{StaticResource GhostButton}" Margin="0,10,0,0" Click="OpenDir_Click"/>
+
+                            <!-- 状态 -->
+                            <Border Grid.Row="9" BorderBrush="#212830" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="#3ECF8E" VerticalAlignment="Center">
+                                        <Ellipse.Effect>
+                                            <DropShadowEffect Color="#3ECF8E" BlurRadius="8" ShadowDepth="0" Opacity="0.9"/>
+                                        </Ellipse.Effect>
+                                    </Ellipse>
+                                    <TextBlock x:Name="StatusText" Text="就绪" Foreground="#87929D" FontSize="11.5" AutomationProperties.AutomationId="StatusText"
+                                               Margin="8,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============ 底栏 ============ -->
+            <Border Grid.Row="2" Background="#090C0F" BorderBrush="#212830" BorderThickness="0,1,0,0">
+                <Grid Margin="15,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#0AFFFFFF" BorderBrush="#2C343D" BorderThickness="1" CornerRadius="2" Padding="5,1">
+                            <TextBlock Text="ENTER" FontFamily="Consolas" FontSize="9.5" Foreground="#8A949F"/>
+                        </Border>
+                        <TextBlock Text="启动" FontFamily="Consolas" FontSize="10" Foreground="#5A6570"
+                                   VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        <Border Background="#0AFFFFFF" BorderBrush="#2C343D" BorderThickness="1" CornerRadius="2"
+                                Padding="5,1" Margin="14,0,0,0">
+                            <TextBlock Text="ESC" FontFamily="Consolas" FontSize="9.5" Foreground="#8A949F"/>
+                        </Border>
+                        <TextBlock Text="关闭" FontFamily="Consolas" FontSize="10" Foreground="#5A6570"
+                                   VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="非官方服务器 · 请勿使用正式服账号" FontFamily="Consolas" FontSize="10"
+                               Foreground="#5A6570" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

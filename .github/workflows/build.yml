@@ -1,0 +1,51 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: build (win-x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Launcher/CSNZ.Launcher.csproj
+
+      - name: Build
+        run: dotnet build Launcher/CSNZ.Launcher.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish Launcher/CSNZ.Launcher.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: CSNZ.Launcher-win-x64
+          path: dist/CSNZ.Launcher.exe
+          if-no-files-found: error
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/CSNZ.Launcher.exe
+          generate_release_notes: true

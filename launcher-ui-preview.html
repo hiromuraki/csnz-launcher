@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSNZ 启动器 · UI 重设计提案</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23ff6a00'/><circle cx='12' cy='12' r='6' fill='none' stroke='%230b0d10' stroke-width='2'/></svg>">
+<style>
+/* ============ 页面基础 ============ */
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --f-ui:"Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+  --f-disp:Bahnschrift,"Segoe UI Semibold","Microsoft YaHei UI",sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 520px at 12% -8%, rgba(255,106,0,.10), transparent 62%),
+    radial-gradient(820px 520px at 88% -4%, rgba(70,120,255,.08), transparent 60%),
+    #0b0c0e;
+  color:#dfe4ea;font-family:var(--f-ui);-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* ============ 页头 ============ */
+.hero{padding:54px 0 26px;border-bottom:1px solid rgba(255,255,255,.07)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.3em;color:#6d7884;text-transform:uppercase}
+.hero h1{margin:14px 0 12px;font-size:33px;line-height:1.25;letter-spacing:.02em;font-weight:650;color:#f1f4f7}
+.hero p{margin:0;max-width:780px;color:#97a2ad;font-size:13.5px;line-height:1.85}
+.hero p b{color:#c9d2db;font-weight:600}
+
+/* ============ 标签 ============ */
+.tabs{position:sticky;top:0;z-index:60;display:flex;gap:8px;padding:14px 0;flex-wrap:wrap;
+  background:linear-gradient(#0b0c0e 62%,rgba(11,12,14,.82));backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.06)}
+.tabs button{display:flex;align-items:center;gap:10px;padding:10px 15px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#a9b3be;
+  font-family:var(--f-ui);font-size:13px;cursor:pointer;transition:all .18s ease}
+.tabs button em{font-style:normal;font-family:var(--f-mono);font-size:9px;letter-spacing:.14em;color:#6b7682}
+.tabs button .sw{width:8px;height:8px;border-radius:2px;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.tabs button:hover{border-color:rgba(255,255,255,.24);color:#e8edf3}
+.tabs button.on{border-color:var(--c);color:#fff;background:rgba(255,255,255,.065);
+  box-shadow:0 0 0 1px var(--c) inset,0 10px 26px -14px var(--c)}
+.tabs .spacer{margin-left:auto;align-self:center;font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;color:#5c6773;padding-right:2px}
+
+/* ============ 案例容器 ============ */
+.case{display:none;padding:32px 0 6px}
+.case.on{display:block;animation:caseIn .38s ease both}
+@keyframes caseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.case-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:20px}
+.kicker{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:#7a8794;display:flex;align-items:center;gap:10px}
+.chip{display:inline-block;padding:3px 9px;border-radius:4px;background:var(--c);color:#0b0c0e;font-weight:700;letter-spacing:.1em;font-size:10px}
+.case-lead{max-width:640px;margin:0;color:#939eaa;font-size:13px;line-height:1.85}
+.case-lead b{color:#cfd8e1;font-weight:600}
+.stage{padding:26px;border-radius:16px;border:1px solid rgba(255,255,255,.07);display:flex;justify-content:center;overflow:hidden;
+  background:
+    radial-gradient(70% 90% at 50% 0%, rgba(255,255,255,.05), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, transparent 1px 28px),
+    #0e1013}
+.specs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.spec{padding:14px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025)}
+.spec dt{font-size:10px;letter-spacing:.2em;color:#6d7885;font-family:var(--f-mono);margin-bottom:8px;text-transform:uppercase}
+.spec dd{margin:0;font-size:12.5px;line-height:1.75;color:#b7c1cc}
+.spec dd b{color:#e6edf4;font-weight:600}
+.stars{color:var(--c);letter-spacing:2px}
+
+/* ============ 通用窗口 ============ */
+.win{position:relative;flex:none;overflow:hidden;font-family:var(--f-ui);font-size:13px;text-align:left;user-select:none}
+[data-status] .dot{width:6px;height:6px;border-radius:50%;flex:none}
+[data-status][data-state="err"]{color:#ff7d6d !important}
+[data-status][data-state="err"] .dot{background:#ff5c4d !important;box-shadow:0 0 9px #ff5c4d !important}
+[data-status][data-state="load"] .dot{background:#ffb43d !important;animation:pulse 1s infinite !important}
+[data-status][data-state="ok"] .dot{background:#43d99a !important;box-shadow:0 0 9px #43d99a !important}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes shake{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(3px)}50%{transform:translateX(-4px)}}
+.shake{animation:shake .4s ease}
+
+/* ===================================================================
+   A · 暗夜战术 TACTICAL DARK
+   =================================================================== */
+.w-a{width:1044px;height:640px;display:flex;flex-direction:column;border-radius:6px;
+  background:#0b0d10;border:1px solid #2f373f;color:#e8eef4;
+  --o:#ff6a00;--ln:rgba(255,255,255,.08);--dim:#8b95a0;
+  box-shadow:0 40px 90px -34px #000,0 0 0 1px rgba(255,255,255,.02) inset}
+.a-title{height:46px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px;
+  background:linear-gradient(180deg,#1a2027,#131820);border-bottom:1px solid #262e36}
+.a-mark{width:22px;height:22px;color:#ff6a00;flex:none}
+.a-brand{font-family:var(--f-disp);font-size:12px;letter-spacing:.3em;color:#eef3f8;font-weight:600}
+.a-brand span{color:#6f7b87;letter-spacing:.2em;font-size:10px;margin-left:8px;font-weight:400}
+.a-build{margin-left:auto;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:#67727e}
+.a-wbtn{display:flex;gap:5px;margin-left:8px}
+.a-wbtn i{width:26px;height:22px;border:1px solid #2c343d;border-radius:3px;display:grid;place-items:center;
+  color:#7d8894;font-style:normal;font-size:10px;background:#0f1317;cursor:default;transition:.15s}
+.a-wbtn i:hover{color:#e8eef4;border-color:#3d4853}
+.a-body{flex:1;display:grid;grid-template-columns:1fr 402px;min-height:0}
+
+/* A 左侧视觉 */
+.a-art{position:relative;padding:30px 34px;display:flex;flex-direction:column;overflow:hidden;
+  background:radial-gradient(120% 100% at 15% 10%,#1c242c 0%,#11161b 46%,#0a0d10 100%)}
+.a-art::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+.a-net{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(85% 75% at 28% 18%,#000 8%,transparent 74%);
+  mask-image:radial-gradient(85% 75% at 28% 18%,#000 8%,transparent 74%)}
+.a-streak{position:absolute;top:-25%;right:-40px;width:170px;height:150%;pointer-events:none;
+  background:repeating-linear-gradient(112deg,rgba(255,106,0,.15) 0 2px,transparent 2px 18px);
+  transform:skewX(-12deg);opacity:.75}
+.a-cross{position:absolute;right:-40px;bottom:-40px;width:320px;height:320px;color:rgba(255,255,255,.07);pointer-events:none}
+.a-vert{position:absolute;right:14px;top:118px;writing-mode:vertical-rl;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.52em;color:rgba(255,255,255,.17);pointer-events:none}
+.a-tags{display:flex;gap:8px;position:relative;z-index:2}
+.a-tag{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.2em;padding:4px 9px;
+  border:1px solid rgba(255,255,255,.16);color:#b6c0ca;border-radius:2px}
+.a-tag.hot{border-color:rgba(255,106,0,.55);color:#ffb27a;background:rgba(255,106,0,.08)}
+.a-big{margin-top:56px;position:relative;z-index:2}
+.a-big .en{font-family:var(--f-mono);font-size:11px;letter-spacing:.42em;color:#8a949f}
+.a-big h2{margin:10px 0 0;font-family:var(--f-disp);font-size:92px;line-height:.85;font-weight:700;
+  letter-spacing:.01em;color:#f4f7fa;text-shadow:0 22px 60px rgba(0,0,0,.55)}
+.a-big h2 span{color:#ff6a00}
+.a-big .line{width:64px;height:4px;background:#ff6a00;margin:20px 0 12px;box-shadow:0 0 22px rgba(255,106,0,.75)}
+.a-big .cn{font-size:13.5px;color:#aab5c0;letter-spacing:.16em}
+.a-brief{margin-top:auto;position:relative;z-index:2;padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(9,12,15,.66)}
+.a-brief::before{content:"";position:absolute;left:-1px;top:-1px;width:28px;height:1px;background:#ff6a00}
+.a-brief-h{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;color:#6f7b87}
+.a-brief-row{display:grid;grid-template-columns:1.35fr 1fr .75fr;gap:14px}
+.a-brief-row div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.a-brief-row span{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.18em;color:#5f6a75}
+.a-brief-row b{font-size:12px;color:#dfe7ef;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-readout{margin-top:auto;position:relative;z-index:2;display:flex;gap:26px;
+  padding-top:16px;border-top:1px solid rgba(255,255,255,.09)}
+.a-readout>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.a-readout span{font-family:var(--f-mono);font-size:9px;letter-spacing:.22em;color:#67727e}
+.a-readout b{font-family:var(--f-mono);font-size:12px;color:#dfe7ef;font-weight:500;white-space:nowrap}
+.a-readout b.link{color:#3ecf8e}
+.a-link-row{display:flex;align-items:center;gap:8px}
+.a-mini{font-family:var(--f-mono);font-size:9px;letter-spacing:.08em;color:#6f7b87;background:transparent;
+  border:1px solid #2c353e;border-radius:2px;padding:2px 6px;cursor:pointer;transition:.15s}
+.a-mini:hover{border-color:#ff6a00;color:#ffb27a;background:rgba(255,106,0,.07)}
+
+/* A 右侧表单 */
+.a-form{background:linear-gradient(180deg,#151a20,#0f1318);border-left:1px solid #262e36;
+  padding:24px 24px 16px;display:flex;flex-direction:column;gap:13px;position:relative}
+.a-form::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:88px;
+  background:linear-gradient(#ff6a00,transparent)}
+.a-formhead{display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:#727d89}
+.a-formhead b{color:#ff8a3d;font-weight:500}
+.a-fld{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#8a949f;letter-spacing:.05em}
+.a-fld input{height:38px;width:100%;background:#0c1014;border:1px solid #2a333c;border-radius:2px;
+  padding:0 12px;color:#eaf0f6;font-size:13px;font-family:var(--f-ui);outline:none;
+  transition:border-color .16s,box-shadow .16s}
+.a-fld input::placeholder{color:#4f5a65}
+.a-fld input:focus{border-color:#ff6a00;box-shadow:0 0 0 3px rgba(255,106,0,.12),inset 0 0 14px rgba(255,106,0,.07)}
+.a-row{display:grid;grid-template-columns:1fr 108px;gap:10px}
+.a-pass{position:relative}
+.a-pass input{padding-right:38px}
+.a-eye{position:absolute;right:2px;bottom:2px;width:34px;height:34px;display:grid;place-items:center;
+  color:#65707c;cursor:pointer;background:none;border:none;border-radius:2px;padding:0}
+.a-eye:hover{color:#ff8a3d}
+.a-sw{display:flex;align-items:center;gap:10px;cursor:pointer;padding:3px 0;font-size:12px;color:#b3bdc8}
+.a-sw input{display:none}
+.a-sw .tr{width:36px;height:20px;border-radius:2px;background:#1b2229;border:1px solid #333d47;
+  position:relative;flex:none;transition:.18s}
+.a-sw .tr::after{content:"";position:absolute;left:3px;top:3px;width:12px;height:12px;
+  background:#6d7885;transition:.18s}
+.a-sw input:checked+.tr{background:rgba(255,106,0,.18);border-color:#ff6a00}
+.a-sw input:checked+.tr::after{left:19px;background:#ff6a00;box-shadow:0 0 10px #ff6a00}
+.a-sw .free{margin-left:auto;font-family:var(--f-mono);font-size:9px;letter-spacing:.14em;color:#5d6873}
+.a-launch{margin-top:4px;height:52px;border:none;cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(100deg,#ff7d22,#ff4d00 52%,#d94100);color:#150a06;
+  font-family:var(--f-ui);font-size:15px;font-weight:700;letter-spacing:.2em;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+  box-shadow:0 10px 30px -14px rgba(255,77,0,.9);transition:filter .15s,transform .1s}
+.a-launch:hover{filter:brightness(1.08) saturate(1.05)}
+.a-launch:active{transform:translateY(1px)}
+.a-launch::before{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-20deg);transition:left .55s}
+.a-launch:hover::before{left:125%}
+.a-launch[disabled]{filter:saturate(.35) brightness(.75);cursor:default}
+.a-sub{display:grid;grid-template-columns:1fr;gap:8px}
+.a-ghost{height:36px;border:1px solid #2c353e;background:rgba(255,255,255,.02);color:#98a3ae;
+  font-size:11.5px;letter-spacing:.06em;cursor:pointer;border-radius:2px;transition:.16s;font-family:var(--f-ui)}
+.a-ghost:hover{border-color:#ff6a00;color:#ffb27a;background:rgba(255,106,0,.06)}
+.a-status{margin-top:auto;display:flex;align-items:center;gap:8px;padding-top:12px;
+  border-top:1px solid #212830;font-size:11.5px;color:#87929d}
+.a-status .dot{background:#3ecf8e;box-shadow:0 0 8px rgba(62,207,142,.8)}
+.a-foot{height:30px;flex:none;background:#090c0f;border-top:1px solid #212830;display:flex;
+  align-items:center;justify-content:space-between;padding:0 14px;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:#5a6570}
+.a-foot b{color:#7c8792;font-weight:400}
+.a-foot .key{border:1px solid #2c343d;border-radius:2px;padding:1px 5px;color:#8a949f;margin-right:5px}
+
+/* ===================================================================
+   B · 生化危机 BIOHAZARD
+   =================================================================== */
+.w-b{width:1024px;height:620px;display:flex;flex-direction:column;border-radius:5px;
+  background:#05090a;border:1px solid #1d2a24;color:#dff3e6;
+  --g:#9dff3d;--g2:#00e0a4;
+  box-shadow:0 40px 90px -34px #000,0 0 70px -40px rgba(157,255,61,.5)}
+.b-hazard{height:6px;flex:none;background:repeating-linear-gradient(45deg,#9dff3d 0 9px,#0a0f0c 9px 18px);opacity:.75}
+.b-title{height:44px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:linear-gradient(180deg,#0a1210,#060b09);border-bottom:1px solid rgba(157,255,61,.12)}
+.b-glyph{font-size:15px;color:#9dff3d;filter:drop-shadow(0 0 7px rgba(157,255,61,.65));line-height:1}
+.b-brand{font-family:var(--f-disp);letter-spacing:.34em;font-size:12px;color:#e6ffe9}
+.b-brand small{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:#5f7a6b;margin-left:10px}
+.b-tt-r{margin-left:auto;display:flex;align-items:center;gap:12px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.16em;color:#5f7a6b}
+.b-tt-r .live{display:flex;align-items:center;gap:6px;color:#9dff3d}
+.b-tt-r .live i{width:5px;height:5px;border-radius:50%;background:#9dff3d;box-shadow:0 0 8px #9dff3d;animation:pulse 2s infinite}
+.b-body{flex:1;display:grid;grid-template-columns:416px 1fr;min-height:0}
+.b-form{padding:22px 24px 16px;display:flex;flex-direction:column;gap:12px;position:relative;
+  background:linear-gradient(180deg,rgba(10,22,17,.92),rgba(4,9,8,.96));border-right:1px solid rgba(157,255,61,.1)}
+.b-form::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(157,255,61,.03) 0 1px,transparent 1px 4px)}
+.b-form>*{position:relative;z-index:1}
+.b-form h3{margin:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;color:#7ea88c;
+  font-weight:400;display:flex;justify-content:space-between;align-items:center}
+.b-form h3 span{color:#9dff3d;border:1px solid rgba(157,255,61,.3);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.12em}
+.b-fld{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#7f9b8d;letter-spacing:.06em}
+.b-fld input{height:38px;background:#070f0c;border:1px solid rgba(157,255,61,.16);border-radius:3px;
+  padding:0 12px;color:#dcffe6;font-size:13px;outline:none;font-family:var(--f-ui);transition:.16s}
+.b-fld input::placeholder{color:#3f5749}
+.b-fld input:focus{border-color:#9dff3d;box-shadow:0 0 0 3px rgba(157,255,61,.1),0 0 26px -8px rgba(157,255,61,.55)}
+.b-row{display:grid;grid-template-columns:1fr 104px;gap:10px}
+.b-pass{position:relative}
+.b-pass input{padding-right:38px}
+.b-eye{position:absolute;right:2px;bottom:2px;width:34px;height:34px;display:grid;place-items:center;
+  color:#5f7a6b;background:none;border:none;cursor:pointer;padding:0}
+.b-eye:hover{color:#9dff3d}
+.b-sw{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:#a9c9b4;padding:3px 0}
+.b-sw input{display:none}
+.b-sw .tr{width:36px;height:20px;border-radius:10px;background:#0d1a14;border:1px solid rgba(157,255,61,.22);
+  position:relative;flex:none;transition:.2s}
+.b-sw .tr::after{content:"";position:absolute;left:3px;top:3px;width:12px;height:12px;border-radius:50%;
+  background:#4e6b5b;transition:.2s}
+.b-sw input:checked+.tr{background:rgba(157,255,61,.15);border-color:#9dff3d;box-shadow:0 0 14px -2px rgba(157,255,61,.5)}
+.b-sw input:checked+.tr::after{left:19px;background:#9dff3d;box-shadow:0 0 10px #9dff3d}
+.b-launch{margin-top:4px;height:52px;border:1px solid rgba(157,255,61,.55);cursor:pointer;
+  background:linear-gradient(100deg,#b8ff55,#78e81c 60%,#4fc70a);color:#06120a;
+  font-size:15px;font-weight:700;letter-spacing:.22em;display:flex;align-items:center;justify-content:center;gap:10px;
+  border-radius:3px;box-shadow:0 0 34px -8px rgba(157,255,61,.65),inset 0 1px 0 rgba(255,255,255,.5);
+  position:relative;overflow:hidden;transition:.16s}
+.b-launch:hover{box-shadow:0 0 46px -6px rgba(157,255,61,.85);filter:brightness(1.05)}
+.b-launch[disabled]{filter:saturate(.35) brightness(.8);cursor:default}
+.b-sub{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.b-ghost{height:34px;border:1px solid rgba(157,255,61,.2);background:rgba(157,255,61,.03);color:#8fb79c;
+  font-size:11.5px;cursor:pointer;border-radius:3px;transition:.16s;font-family:var(--f-ui);letter-spacing:.05em}
+.b-ghost:hover{border-color:#9dff3d;color:#d6ffb8;background:rgba(157,255,61,.08)}
+.b-status{margin-top:auto;padding-top:12px;border-top:1px solid rgba(157,255,61,.14);
+  display:flex;align-items:center;gap:8px;font-size:11.5px;color:#7f9b8d}
+.b-status .dot{background:#9dff3d;box-shadow:0 0 8px rgba(157,255,61,.8)}
+/* B 右侧 */
+.b-art{position:relative;overflow:hidden;padding:24px 28px;display:flex;flex-direction:column;
+  background:radial-gradient(85% 75% at 62% 34%,rgba(0,224,164,.14),transparent 62%),
+             radial-gradient(60% 60% at 90% 90%,rgba(157,255,61,.09),transparent 70%),
+             linear-gradient(160deg,#07100d,#04080a)}
+.b-hz{position:absolute;right:-56px;top:44px;font-size:330px;line-height:1;color:rgba(157,255,61,.05);
+  animation:spin 120s linear infinite;pointer-events:none;text-shadow:0 0 90px rgba(157,255,61,.35)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.b-art>*:not(.b-hz){position:relative;z-index:2}
+.b-cont{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.36em;color:#5f7a6b;
+  display:flex;justify-content:space-between;align-items:center}
+.b-cont em{font-style:normal;color:#ff6a5a;letter-spacing:.2em}
+.b-scen{margin-top:22px}
+.b-scen .cn{font-size:13px;letter-spacing:.3em;color:#9dff3d;font-family:var(--f-mono)}
+.b-scen h2{margin:8px 0 0;font-family:var(--f-disp);font-size:52px;line-height:.95;letter-spacing:.02em;color:#eaffd9;
+  text-shadow:0 0 40px rgba(157,255,61,.35)}
+.b-scen .ghost{font-family:var(--f-disp);font-size:52px;line-height:.95;letter-spacing:.02em;
+  color:transparent;-webkit-text-stroke:1px rgba(157,255,61,.42)}
+.b-stats{display:flex;gap:26px;margin-top:20px;padding-top:14px;border-top:1px dashed rgba(157,255,61,.18)}
+.b-stats div{display:flex;flex-direction:column;gap:4px}
+.b-stats span{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.2em;color:#5f7a6b}
+.b-stats b{font-size:12px;color:#d3ecd9;font-weight:500}
+.b-pre{display:flex;flex-direction:column;gap:7px;margin-top:2px;padding-top:12px;border-top:1px solid rgba(157,255,61,.14)}
+.b-pre .p{display:flex;align-items:center;gap:8px;font-size:10.5px;color:#8fb79c}
+.b-pre .p b{margin-left:auto;font-family:var(--f-mono);font-size:9.5px;font-weight:400;color:#9dff3d;letter-spacing:.1em}
+.b-pre .p i{width:5px;height:5px;border-radius:50%;flex:none}
+.b-pre .p i.ok{background:#9dff3d;box-shadow:0 0 7px #9dff3d}
+.b-pre .p i.idle{background:#3e5548}
+.b-news{margin-top:auto;border-top:1px solid rgba(157,255,61,.16);padding-top:12px}
+.b-news .ttl{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.26em;color:#5f7a6b;margin-bottom:8px;
+  display:flex;justify-content:space-between}
+.b-item{display:flex;align-items:center;gap:12px;padding:7px 8px;border-radius:3px;cursor:default;
+  font-size:12px;color:#a9c9b4;transition:.16s;border-left:2px solid transparent}
+.b-item em{font-style:normal;font-family:var(--f-mono);font-size:10px;color:#5f7a6b;flex:none;letter-spacing:.06em}
+.b-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b-item:hover{background:rgba(157,255,61,.06);border-left-color:#9dff3d;color:#e2ffd2}
+.b-item i{font-style:normal;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.14em;color:#07110a;
+  background:#9dff3d;padding:2px 5px;border-radius:2px;flex:none}
+.b-foot{height:30px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+  background:#040807;border-top:1px solid rgba(157,255,61,.12);
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;color:#4e6559}
+.b-foot b{color:#7c9c88;font-weight:400}
+
+/* ===================================================================
+   C · 极简光面 CLEAN
+   =================================================================== */
+.w-c{width:900px;height:612px;display:flex;flex-direction:column;border-radius:14px;
+  background:#fff;color:#121820;
+  box-shadow:0 50px 110px -40px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.55)}
+.c-title{height:42px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+  border-bottom:1px solid #eef1f4;background:#fff;border-radius:14px 14px 0 0}
+.c-dot{width:22px;height:22px;border-radius:6px;background:#ff5a1f;display:grid;place-items:center;flex:none;
+  box-shadow:0 2px 8px rgba(255,90,31,.35)}
+.c-dot svg{width:12px;height:12px;color:#fff}
+.c-title .nm{font-size:12.5px;font-weight:600;color:#2a3340;letter-spacing:.02em}
+.c-title .ver{font-family:var(--f-mono);font-size:10px;color:#98a2ad;letter-spacing:.06em;margin-left:4px}
+.c-title .btns{margin-left:auto;display:flex;gap:6px}
+.c-title .btns i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#8d97a2;
+  font-style:normal;font-size:10px;cursor:default;transition:.15s}
+.c-title .btns i:hover{background:#f2f4f6;color:#3a4450}
+.c-title .btns i.x:hover{background:#ffe9e3;color:#ff5a1f}
+.c-body{flex:1;display:grid;grid-template-columns:272px 1fr;min-height:0}
+.c-side{background:linear-gradient(165deg,#fff4ee 0%,#fffaf7 45%,#ffffff 100%);
+  border-right:1px solid #f1f3f5;padding:26px 24px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.c-side::after{content:"";position:absolute;right:-70px;top:-70px;width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,90,31,.16),transparent 68%)}
+.c-logo{font-family:var(--f-disp);font-size:38px;font-weight:800;letter-spacing:.04em;color:#121820;line-height:1}
+.c-logo span{color:#ff5a1f}
+.c-tag{margin-top:8px;font-family:var(--f-mono);font-size:9px;letter-spacing:.22em;color:#a3adb8}
+.c-tag2{margin-top:14px;font-size:12px;color:#6d7883;line-height:1.7;position:relative;z-index:1}
+.c-side .sep{height:1px;background:#eceff2;margin:20px 0}
+.c-side .meta{font-size:11.5px;color:#8a949f;display:flex;flex-direction:column;gap:9px;position:relative;z-index:1}
+.c-side .meta div{display:flex;justify-content:space-between;gap:10px}
+.c-side .meta b{color:#3a4450;font-weight:600;font-family:var(--f-mono);font-size:11px}
+.c-checks{margin-top:auto;display:flex;flex-direction:column;gap:8px;position:relative;z-index:1}
+.c-checks div{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#7b858f}
+.c-checks i{width:6px;height:6px;border-radius:50%;flex:none}
+.c-checks i.ok{background:#22b573;box-shadow:0 0 0 3px rgba(34,181,115,.14)}
+.c-checks i.idle{background:#c3cbd3;box-shadow:0 0 0 3px rgba(163,173,184,.14)}
+.c-main{padding:30px 36px 22px;display:flex;flex-direction:column;gap:13px}
+.c-main h2{margin:0;font-size:19px;font-weight:650;color:#121820;letter-spacing:.01em}
+.c-main .sub{margin:-6px 0 6px;font-size:12.5px;color:#8a949f}
+.c-fld{display:flex;flex-direction:column;gap:7px}
+.c-fld>span{font-size:12px;color:#5f6b77;font-weight:500;letter-spacing:.02em}
+.c-fld input{height:42px;border:1px solid #e3e8ec;border-radius:8px;background:#f8fafb;
+  padding:0 13px;font-size:13.5px;color:#121820;outline:none;font-family:var(--f-ui);transition:.16s;width:100%}
+.c-fld input::placeholder{color:#aab4bf}
+.c-fld input:focus{background:#fff;border-color:#ff5a1f;box-shadow:0 0 0 4px rgba(255,90,31,.11)}
+.c-row{display:grid;grid-template-columns:1fr 118px;gap:12px}
+.c-pass{position:relative}
+.c-pass input{padding-right:40px}
+.c-eye{position:absolute;right:4px;bottom:4px;width:34px;height:34px;display:grid;place-items:center;
+  border:none;background:none;color:#a3adb8;cursor:pointer;border-radius:6px;padding:0}
+.c-eye:hover{color:#ff5a1f;background:#fff3ee}
+.c-chk{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12.5px;color:#5f6b77;padding:2px 0}
+.c-chk input{display:none}
+.c-chk .bx{width:18px;height:18px;border-radius:5px;border:1.5px solid #d3dae1;background:#fff;
+  display:grid;place-items:center;flex:none;transition:.15s;color:#fff;font-size:10px;line-height:1}
+.c-chk input:checked+.bx{background:#ff5a1f;border-color:#ff5a1f}
+.c-chk input:checked+.bx::after{content:"";width:9px;height:5px;border-left:2px solid #fff;
+  border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.c-chk .free{margin-left:auto;font-size:10.5px;color:#aab4bf;font-family:var(--f-mono);letter-spacing:.06em}
+.c-launch{margin-top:6px;height:50px;border:none;border-radius:10px;cursor:pointer;
+  background:linear-gradient(100deg,#ff7a3d,#ff5a1f 55%,#ef4a0c);color:#fff;
+  font-size:15px;font-weight:650;letter-spacing:.14em;
+  box-shadow:0 10px 24px -12px rgba(255,90,31,.9);transition:.15s}
+.c-launch:hover{filter:brightness(1.04);box-shadow:0 14px 30px -12px rgba(255,90,31,.95)}
+.c-launch:active{transform:translateY(1px)}
+.c-launch[disabled]{opacity:.6;cursor:default}
+.c-status{display:flex;align-items:center;gap:8px;font-size:12px;color:#7b858f;margin-top:2px}
+.c-status .dot{background:#22b573}
+.c-foot{font-size:10.5px;color:#aab4bf;font-family:var(--f-mono);letter-spacing:.04em;
+  border-top:1px solid #f1f3f5;padding-top:12px;margin-top:auto;padding-bottom:2px}
+
+/* ===================================================================
+   D · 霓虹街机 NEON ARCADE
+   =================================================================== */
+.w-d{width:1060px;height:660px;display:flex;flex-direction:column;border-radius:8px;position:relative;
+  background:#07030f;color:#f2e9ff;border:1px solid rgba(255,45,138,.28);
+  --p:#ff2d8a;--cy:#22e6ff;--vi:#7b3cff;
+  box-shadow:0 40px 100px -24px #000,0 0 90px -46px rgba(255,45,138,.9)}
+.w-d::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(70% 60% at 18% 8%,rgba(255,45,138,.2),transparent 60%),
+    radial-gradient(60% 55% at 88% 20%,rgba(34,230,255,.15),transparent 62%),
+    radial-gradient(70% 60% at 50% 110%,rgba(123,60,255,.25),transparent 65%)}
+.w-d::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(75% 70% at 50% 40%,#000,transparent 78%);
+  mask-image:radial-gradient(75% 70% at 50% 40%,#000,transparent 78%)}
+.d-title{height:46px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;position:relative;z-index:3;
+  border-bottom:1px solid rgba(255,255,255,.1)}
+.d-title::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,#ff2d8a 25%,#7b3cff 55%,#22e6ff 80%,transparent)}
+.d-brand{font-family:var(--f-disp);font-size:13px;letter-spacing:.34em;
+  background:linear-gradient(90deg,#fff,#ffb3d6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.d-brand small{font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;color:#a07ab8;margin-left:10px}
+.d-title .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.d-pill{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;padding:4px 9px;border-radius:20px;
+  border:1px solid rgba(34,230,255,.35);color:#8ef2ff;background:rgba(34,230,255,.07)}
+.d-wbtn{display:flex;gap:5px;margin-left:6px}
+.d-wbtn i{width:26px;height:22px;border:1px solid rgba(255,255,255,.14);border-radius:4px;display:grid;
+  place-items:center;color:#a08fb2;font-style:normal;font-size:10px;cursor:default;transition:.15s}
+.d-wbtn i:hover{color:#fff;border-color:rgba(255,45,138,.6)}
+.d-body{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0;position:relative;z-index:2}
+.d-left{padding:26px 24px 22px;display:flex;flex-direction:column;position:relative;
+  border-right:1px solid rgba(255,255,255,.08)}
+.d-left .tag{font-family:var(--f-mono);font-size:9px;letter-spacing:.3em;color:#9d7fb5}
+.d-big{margin-top:16px;font-family:var(--f-disp);font-size:58px;line-height:.9;font-weight:700;letter-spacing:.02em;
+  background:linear-gradient(120deg,#fff 10%,#ffd9ec 40%,#ff2d8a 70%,#7b3cff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(255,45,138,.55))}
+.d-left .cn{margin-top:10px;font-size:12px;letter-spacing:.24em;color:#c9a7dd}
+.d-left .cyan{margin-top:4px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.26em;color:#22e6ff;opacity:.8}
+.d-vline{margin:18px 0;height:1px;background:linear-gradient(90deg,rgba(255,45,138,.7),transparent)}
+.d-mini{display:flex;flex-direction:column;gap:10px}
+.d-mini div{display:flex;justify-content:space-between;font-size:11px;color:#a893ba}
+.d-mini b{font-family:var(--f-mono);font-size:10.5px;color:#e8dcf5;font-weight:500}
+.d-left .foot{margin-top:16px;font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;color:#6d5a80}
+.d-main{padding:24px 26px 20px;display:grid;grid-template-columns:406px 1fr;gap:22px;min-height:0}
+.d-cardwrap{padding:1px;border-radius:14px;
+  background:linear-gradient(140deg,rgba(255,45,138,.9),rgba(123,60,255,.55) 45%,rgba(34,230,255,.75));
+  box-shadow:0 0 40px -18px rgba(255,45,138,.9)}
+.d-card{border-radius:13px;background:linear-gradient(180deg,rgba(16,7,26,.94),rgba(9,4,18,.97));
+  padding:20px 20px 16px;display:flex;flex-direction:column;gap:12px;height:100%}
+.d-card .hd{display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;color:#b58fd0}
+.d-card .hd b{font-weight:400;color:#22e6ff}
+.d-fld{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#b9a4cc;letter-spacing:.06em}
+.d-fld input{height:38px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);
+  border-radius:7px;padding:0 12px;color:#fdf6ff;font-size:13px;outline:none;font-family:var(--f-ui);transition:.18s}
+.d-fld input::placeholder{color:#7b668f}
+.d-fld input:focus{border-color:#ff2d8a;background:rgba(255,45,138,.07);
+  box-shadow:0 0 0 3px rgba(255,45,138,.16),0 0 26px -6px rgba(255,45,138,.65)}
+.d-row{display:grid;grid-template-columns:1fr 100px;gap:10px}
+.d-pass{position:relative}
+.d-pass input{padding-right:38px}
+.d-eye{position:absolute;right:2px;bottom:2px;width:34px;height:34px;display:grid;place-items:center;
+  color:#8f77a6;background:none;border:none;cursor:pointer;padding:0;border-radius:6px}
+.d-eye:hover{color:#22e6ff}
+.d-sw{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:11.5px;color:#c9b6da;padding:2px 0}
+.d-sw input{display:none}
+.d-sw .tr{width:36px;height:20px;border-radius:20px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.16);position:relative;flex:none;transition:.2s}
+.d-sw .tr::after{content:"";position:absolute;left:3px;top:3px;width:12px;height:12px;border-radius:50%;
+  background:#8b76a0;transition:.2s}
+.d-sw input:checked+.tr{background:linear-gradient(90deg,rgba(255,45,138,.55),rgba(123,60,255,.55));border-color:rgba(255,45,138,.8)}
+.d-sw input:checked+.tr::after{left:19px;background:#fff;box-shadow:0 0 10px rgba(255,45,138,.9)}
+.d-launch{margin-top:6px;height:54px;border:none;border-radius:9px;cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(100deg,#ff2d8a,#b52dff 55%,#7b3cff);color:#fff;
+  font-size:15px;font-weight:700;letter-spacing:.22em;display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 0 34px -8px rgba(255,45,138,.95),0 14px 30px -18px #000;transition:.16s}
+.d-launch:hover{filter:brightness(1.08)}
+.d-launch:active{transform:translateY(1px)}
+.d-launch[disabled]{filter:saturate(.4) brightness(.75);cursor:default}
+.d-pre{display:flex;flex-direction:column;gap:7px;margin-top:4px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.d-pre .p{display:flex;align-items:center;gap:8px;font-size:10.5px;color:#a390b7}
+.d-pre .p b{margin-left:auto;font-family:var(--f-mono);font-size:9.5px;font-weight:400;color:#8ef2ff;letter-spacing:.1em}
+.d-pre .p i{width:5px;height:5px;border-radius:50%;flex:none}
+.d-pre .p i.ok{background:#22e6ff;box-shadow:0 0 7px #22e6ff}
+.d-pre .p i.idle{background:#6d5a80}
+.d-season{margin-top:auto;text-align:right;font-family:var(--f-disp);font-size:118px;line-height:.8;letter-spacing:.02em;
+  color:transparent;-webkit-text-stroke:1px rgba(255,45,138,.22);filter:drop-shadow(0 0 26px rgba(255,45,138,.18))}
+.d-rows{display:flex;flex-direction:column;gap:7px}
+.d-rows div{display:flex;justify-content:space-between;font-size:10.5px;color:#a893ba}
+.d-rows b{font-family:var(--f-mono);font-size:10px;color:#e8dcf5;font-weight:400}
+.d-status{display:flex;align-items:center;gap:8px;font-size:11px;color:#a390b7;margin-top:12px;
+  border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
+.d-status .dot{background:#22e6ff;box-shadow:0 0 9px #22e6ff}
+.d-rail{display:flex;flex-direction:column;gap:14px;min-height:0}
+.d-panel{border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.035);
+  padding:14px 16px;backdrop-filter:blur(6px)}
+.d-panel .hd{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:#b58fd0;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center}
+.d-panel .hd i{font-style:normal;color:#22e6ff}
+.d-srv{display:flex;flex-direction:column;gap:8px}
+.d-srv .addr{font-family:var(--f-mono);font-size:13px;color:#fff;letter-spacing:.06em}
+.d-srv .row{display:flex;justify-content:space-between;font-size:10.5px;color:#a893ba}
+.d-srv .row b{font-family:var(--f-mono);color:#8ef2ff;font-weight:400}
+.d-nitem{display:flex;gap:10px;padding:7px 0;font-size:11.5px;color:#c3b0d6;line-height:1.5;align-items:flex-start}
+.d-nitem em{font-style:normal;font-family:var(--f-mono);font-size:9px;color:#7b5f92;flex:none;padding-top:2px}
+.d-nitem.hot em{color:#ff2d8a}
+.d-actions{display:flex;gap:8px;margin-top:auto}
+.d-ghost{flex:1;height:34px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);
+  color:#bfa9d2;font-size:11px;border-radius:7px;cursor:pointer;transition:.16s;font-family:var(--f-ui);letter-spacing:.04em}
+.d-ghost:hover{border-color:#22e6ff;color:#c9fbff;background:rgba(34,230,255,.08)}
+.d-marquee{height:30px;flex:none;position:relative;z-index:3;overflow:hidden;display:flex;align-items:center;
+  border-top:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.35)}
+.d-track{display:flex;gap:34px;white-space:nowrap;animation:marq 26s linear infinite;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.28em;color:#8f76a6}
+.d-track b{color:#ff6fb1;font-weight:400}
+.d-track i{color:#22e6ff;font-style:normal}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ============ 页尾说明 ============ */
+.sect{margin-top:44px;padding-top:28px;border-top:1px solid rgba(255,255,255,.07)}
+.sect h2{font-size:18px;margin:0 0 6px;color:#eef2f6;letter-spacing:.02em;font-weight:600}
+.sect .sub{margin:0 0 18px;color:#8d98a4;font-size:12.5px}
+.cmp{width:100%;border-collapse:collapse;font-size:12.5px;overflow:hidden;border-radius:10px}
+.cmp th,.cmp td{text-align:left;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.cmp thead th{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;color:#7f8b98;
+  background:rgba(255,255,255,.03);font-weight:400}
+.cmp tbody tr:hover{background:rgba(255,255,255,.02)}
+.cmp td:first-child{color:#8d98a4;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em}
+.cmp td b{color:#e7eef5;font-weight:600}
+.dot-s{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:7px;vertical-align:1px}
+.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.opt{padding:14px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025)}
+.opt h3{margin:0 0 6px;font-size:13px;color:#e7eef5;font-weight:600;display:flex;align-items:center;gap:8px}
+.opt h3 span{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;padding:2px 6px;border-radius:3px;
+  background:rgba(255,255,255,.07);color:#9aa6b2;font-weight:400}
+.opt p{margin:0;font-size:11.5px;line-height:1.7;color:#8d98a4}
+.next{margin:44px 0 60px;padding:22px 24px;border-radius:12px;border:1px solid rgba(255,106,0,.28);
+  background:linear-gradient(100deg,rgba(255,106,0,.09),rgba(255,106,0,.02));font-size:13px;line-height:1.9;color:#b9c3ce}
+.next b{color:#ffb27a}
+.next kbd{font-family:var(--f-mono);font-size:10.5px;border:1px solid rgba(255,255,255,.18);border-radius:3px;
+  padding:1px 6px;color:#dfe4ea;background:rgba(255,255,255,.05)}
+@media(max-width:960px){.specs{grid-template-columns:1fr 1fr}.opt-grid{grid-template-columns:1fr 1fr}.cmp{font-size:11.5px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">CSO PRIVATE SERVER · LAUNCHER UI · PROPOSAL v1</div>
+    <h1>CSNZ 启动器 · 界面重设计方案</h1>
+    <p>基于现有启动器逻辑（IP / 端口 / 用户名 / 密码 / 跳过登录框 / 启动 / 状态提示）的四个视觉方向。
+      每个方案都是<b>可点可输入</b>的模拟稿：试着点击「启动游戏」、切换开关、点小眼睛。
+      用上方标签或键盘 <b>1–4</b> 切换。本页只是设计稿，尚未改动 <b>Launcher</b> 任何代码。</p>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="a" class="on" style="--c:#ff6a00"><span class="sw"></span>A · 暗夜战术<em>TACTICAL</em></button>
+    <button data-tab="b" style="--c:#9dff3d"><span class="sw"></span>B · 生化危机<em>BIOHAZARD</em></button>
+    <button data-tab="c" style="--c:#ff5a1f"><span class="sw"></span>C · 极简光面<em>CLEAN</em></button>
+    <button data-tab="d" style="--c:#ff2d8a"><span class="sw"></span>D · 霓虹街机<em>NEON</em></button>
+    <span class="spacer">CLICK / 1-4</span>
+  </nav>
+
+  <!-- ================= 方案 A ================= -->
+  <section class="case on" id="case-a" style="--c:#ff6a00">
+    <div class="case-head">
+      <div>
+        <div class="kicker"><span class="chip">A</span>TACTICAL DARK · 暗夜战术</div>
+        <p class="case-lead" style="margin-top:10px">最贴近 CSO 原生气质的一套：枪灰底色、橙色强调、切角面板、HUD 网格与扫描线。
+          左侧承载阵营/目标读数，右侧专注输入，<b>信息分区像一张战术面板</b>。</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="win w-a">
+        <div class="a-title">
+          <svg class="a-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="7.2"/><circle cx="12" cy="12" r="2.4"/>
+            <path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>
+          </svg>
+          <div class="a-brand">CSNZ <span>LAUNCHER</span></div>
+          <div class="a-build">BUILD 43 · 2025</div>
+          <div class="a-wbtn"><i>—</i><i class="x">✕</i></div>
+        </div>
+        <div class="a-body">
+          <div class="a-art">
+            <div class="a-net"></div>
+            <div class="a-streak"></div>
+            <svg class="a-cross" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1">
+              <circle cx="100" cy="100" r="94"/><circle cx="100" cy="100" r="62"/><circle cx="100" cy="100" r="26"/>
+              <path d="M100 0v48M100 152v48M0 100h48M152 100h48"/>
+            </svg>
+            <div class="a-vert">Counter-Strike: Online</div>
+            <div class="a-big">
+              <div class="en">COUNTER-STRIKE ONLINE</div>
+              <h2>CS<span>N</span>Z</h2>
+              <div class="line"></div>
+              <div class="cn">私人服务器启动器 · 接入即战</div>
+            </div>
+            <div class="a-readout">
+              <div><span>TARGET</span><b data-target>127.0.0.1 : 30002</b></div>
+              <div><span>CLIENT</span><b>Bin\CSOLauncher.exe</b></div>
+              <div>
+                <span>LINK</span>
+                <div class="a-link-row">
+                  <b class="link" data-ping>在线 · 4 ms</b>
+                  <button class="a-mini" data-ping-btn>检测</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="a-form">
+            <div class="a-formhead"><span>// 服务器与账号</span><b>预设 · 本地</b></div>
+            <div class="a-row">
+              <label class="a-fld">IP 地址<input data-ip value="127.0.0.1" spellcheck="false"></label>
+              <label class="a-fld">端口<input data-port value="30002" maxlength="5"></label>
+            </div>
+            <label class="a-fld">用户名<input data-user placeholder="输入账号"></label>
+            <label class="a-fld">密码
+              <span class="a-pass"><input data-pass type="password" placeholder="输入密码">
+                <button class="a-eye" data-eye type="button" title="显示/隐藏">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <label class="a-sw"><input type="checkbox" checked><span class="tr"></span>跳过游戏内登录框<span class="free">AUTH UI OFF</span></label>
+            <label class="a-sw"><input type="checkbox" checked><span class="tr"></span>修复 DPI<span class="free">125%</span></label>
+            <button class="a-launch" data-launch>
+              <span data-btntxt>启动游戏</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M4 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <div class="a-sub">
+              <button class="a-ghost">打开游戏目录</button>
+            </div>
+            <div class="a-status" data-status data-state="ok"><i class="dot"></i><span data-status-text>就绪 · 客户端文件已定位</span></div>
+          </div>
+        </div>
+        <div class="a-foot">
+          <span><span class="key">ENTER</span>启动　<span class="key">F2</span>帮助</span>
+          <b>非官方服务器 · 请勿使用正式服账号</b>
+        </div>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec"><dt>Design language</dt><dd>枪灰 + 高饱和橙；切角面板、1px 细线、等宽字读数、斜向警示条纹。</dd></div>
+      <div class="spec"><dt>Motion</dt><dd>按钮悬停斜向扫光、输入框橙色辉光、状态点呼吸。</dd></div>
+      <div class="spec"><dt>WPF 成本</dt><dd><span class="stars">★★☆</span> 切角用 ClipPath，扫光用 TranslateTransform，全部原生控件可做。</dd></div>
+      <div class="spec"><dt>适合</dt><dd>想保留 CSO 味道、又要一点竞技感；<b>最稳的默认方案</b>。</dd></div>
+    </div>
+  </section>
+
+  <!-- ================= 方案 B ================= -->
+  <section class="case" id="case-b" style="--c:#9dff3d">
+    <div class="case-head">
+      <div>
+        <div class="kicker"><span class="chip">B</span>BIOHAZARD · 生化危机</div>
+        <p class="case-lead" style="margin-top:10px">把「僵尸 / 灾变」这张牌打满：毒素绿、危险条纹、标本水印与烟雾辉光。
+          表单在左、公告与氛围图在右，<b>启动瞬间像一次「污染接入」</b>。</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="win w-b">
+        <div class="b-hazard"></div>
+        <div class="b-title">
+          <div class="b-glyph">☣</div>
+          <div class="b-brand">CSNZ<small>BIOSAFETY LEVEL 4</small></div>
+          <div class="b-tt-r"><span class="live"><i></i>SERVER READY</span><span>BUILD 43.2</span><span>— ✕</span></div>
+        </div>
+        <div class="b-body">
+          <div class="b-form">
+            <h3>ACCESS TERMINAL<span>LIVE</span></h3>
+            <div class="b-row">
+              <label class="b-fld">接入 IP<input data-ip value="127.0.0.1" spellcheck="false"></label>
+              <label class="b-fld">端口<input data-port value="30002" maxlength="5"></label>
+            </div>
+            <label class="b-fld">幸存者编号<input data-user placeholder="用户名"></label>
+            <label class="b-fld">访问密钥
+              <span class="b-pass"><input data-pass type="password" placeholder="密码">
+                <button class="b-eye" data-eye type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <label class="b-sw"><input type="checkbox" checked><span class="tr"></span>跳过游戏内登录框</label>
+            <button class="b-launch" data-launch><span data-btntxt>进 入 隔 离 区</span></button>
+            <div class="b-sub">
+              <button class="b-ghost">启动主服务器</button>
+              <button class="b-ghost">打开游戏目录</button>
+            </div>
+            <div class="b-pre">
+              <div class="p"><i class="ok"></i>客户端文件已定位<b>FOUND</b></div>
+              <div class="p"><i class="idle"></i>服务器连通性<b data-ping>检测</b></div>
+            </div>
+            <div class="b-status" data-status data-state="ok"><i class="dot"></i><span data-status-text>样本库已载入 · 等待接入</span></div>
+          </div>
+          <div class="b-art">
+            <div class="b-hz">☣</div>
+            <div class="b-cont"><span>QUARANTINE ZONE / 隔离区</span><em>● REC 00:43:12</em></div>
+            <div class="b-scen">
+              <div class="cn">ZOMBIE ESCAPE</div>
+              <h2>灾变模式</h2>
+              <div class="ghost">CONTAMINATED</div>
+            </div>
+            <div class="b-stats">
+              <div><span>MODE</span><b>灾变</b></div>
+              <div><span>MAP</span><b>冰封废墟</b></div>
+              <div><span>DIFFICULTY</span><b>HARD</b></div>
+            </div>
+            <div class="b-news">
+              <div class="ttl"><span>公告 / BROADCAST</span><span>3 条未读</span></div>
+              <div class="b-item"><em>11.01</em><span>万圣节活动开启 · 灾变模式双倍经验</span><i>NEW</i></div>
+              <div class="b-item"><em>10.28</em><span>修复「冰封废墟」关卡掉线问题</span></div>
+              <div class="b-item"><em>10.21</em><span>客户端补丁 v43.2 已发布，请重新接入</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="b-foot"><span>● LINK: 127.0.0.1:30002</span><b>非官方服务器 · 请勿使用正式服账号</b></div>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec"><dt>Design language</dt><dd>毒素绿 + 近黑；危险条纹、☣ 水印、烟雾辉光、标本档案式排版。</dd></div>
+      <div class="spec"><dt>Motion</dt><dd>水印极慢旋转、按钮辉光呼吸、公告逐条高亮。</dd></div>
+      <div class="spec"><dt>WPF 成本</dt><dd><span class="stars">★★★</span> 需要 DropShadowEffect + 少量 Storyboard，注意低端机性能。</dd></div>
+      <div class="spec"><dt>适合</dt><dd>主推灾变 / 生化模式的服务器，氛围最统一。</dd></div>
+    </div>
+  </section>
+
+  <!-- ================= 方案 C ================= -->
+  <section class="case" id="case-c" style="--c:#ff5a1f">
+    <div class="case-head">
+      <div>
+        <div class="kicker"><span class="chip">C</span>CLEAN · 极简光面</div>
+        <p class="case-lead" style="margin-top:10px">反其道而行：不扮演游戏 HUD，只做一件<b>干净、可信、每天都会打开的工具</b>。
+          浅色卡片、圆角、大量留白，信息层级靠字号与间距而不是装饰。</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="win w-c">
+        <div class="c-title">
+          <div class="c-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+          <span class="nm">CSNZ 启动器</span><span class="ver">v1.0</span>
+          <div class="btns"><i>—</i><i class="x">✕</i></div>
+        </div>
+        <div class="c-body">
+          <div class="c-side">
+            <div class="c-logo">CS<span>N</span>Z</div>
+            <div class="c-tag">COUNTER-STRIKE ONLINE</div>
+            <div class="c-tag2">私人服务器启动器<br>填入地址与账号即可进入游戏</div>
+            <div class="sep"></div>
+            <div class="meta">
+              <div><span>服务器</span><b>127.0.0.1:30002</b></div>
+              <div><span>客户端</span><b>43.2</b></div>
+              <div><span>目录</span><b>Bin\</b></div>
+            </div>
+            <div class="c-checks">
+              <div><i class="ok"></i>客户端文件已定位</div>
+              <div><i class="idle"></i>服务器连通 待检测</div>
+            </div>
+          </div>
+          <div class="c-main">
+            <h2>登录并启动</h2>
+            <div class="sub">账号仅用于本次启动，不会被保存。</div>
+            <div class="c-row">
+              <label class="c-fld"><span>IP 地址</span><input data-ip value="127.0.0.1" spellcheck="false"></label>
+              <label class="c-fld"><span>端口</span><input data-port value="30002" maxlength="5"></label>
+            </div>
+            <label class="c-fld"><span>用户名</span><input data-user placeholder="输入账号"></label>
+            <label class="c-fld"><span>密码</span>
+              <span class="c-pass"><input data-pass type="password" placeholder="输入密码">
+                <button class="c-eye" data-eye type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <label class="c-chk"><input type="checkbox" checked><span class="bx"></span>跳过游戏内登录框<span class="free">AUTH UI OFF</span></label>
+            <button class="c-launch" data-launch><span data-btntxt>启动游戏</span></button>
+            <div class="c-status" data-status data-state="ok"><i class="dot"></i><span data-status-text>准备就绪</span></div>
+            <div class="c-foot">游戏目录 · Bin\CSOLauncher.exe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec"><dt>Design language</dt><dd>浅色卡片 + 暖橙强调；8/10px 圆角、柔和阴影、标签内嵌输入框。</dd></div>
+      <div class="spec"><dt>Motion</dt><dd>几乎无动效，只有 hover 与状态淡入，安静可靠。</dd></div>
+      <div class="spec"><dt>WPF 成本</dt><dd><span class="stars">★☆☆</span> 最低：Border + 圆角 + 简单 Style，一天内可完成。</dd></div>
+      <div class="spec"><dt>适合</dt><dd>脚本化 / 自动化场景、网吧运维、不喜欢「游戏装饰」的人。</dd></div>
+    </div>
+  </section>
+
+  <!-- ================= 方案 D ================= -->
+  <section class="case" id="case-d" style="--c:#ff2d8a">
+    <div class="case-head">
+      <div>
+        <div class="kicker"><span class="chip">D</span>NEON ARCADE · 霓虹街机</div>
+        <p class="case-lead" style="margin-top:10px">最激进的一套：斜向光晕、霓虹渐变描边、斜切玻璃面板与底部跑马灯。
+          <b>像 2025 年的游戏客户端</b>，辨识度最高，也最挑审美。</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="win w-d">
+        <div class="d-title">
+          <div class="d-brand">CSNZ<small>LAUNCHER</small></div>
+          <div class="right">
+            <span class="d-pill">SEASON 04</span>
+            <span class="d-wbtn"><i>—</i><i>✕</i></span>
+          </div>
+        </div>
+        <div class="d-body">
+          <div class="d-left">
+            <div class="tag">PRIVATE SERVER / EST. 2025</div>
+            <div class="d-big">CSNZ</div>
+            <div class="cn">反恐精英 Online</div>
+            <div class="cyan">COUNTER-STRIKE ONLINE</div>
+            <div class="d-vline"></div>
+            <div class="d-mini">
+              <div><span>客户端版本</span><b>43.2</b></div>
+              <div><span>当前模式</span><b>ZOMBIE ESCAPE</b></div>
+              <div><span>接入点</span><b>本地</b></div>
+            </div>
+            <div class="d-season">04</div>
+            <div class="foot">BUILD 43.2 · WIN-X64</div>
+          </div>
+          <div class="d-main">
+            <div class="d-cardwrap">
+              <div class="d-card">
+                <div class="hd"><span>// CONNECT</span><b>LIVE</b></div>
+                <div class="d-row">
+                  <label class="d-fld">IP 地址<input data-ip value="127.0.0.1" spellcheck="false"></label>
+                  <label class="d-fld">端口<input data-port value="30002" maxlength="5"></label>
+                </div>
+                <label class="d-fld">用户名<input data-user placeholder="输入账号"></label>
+                <label class="d-fld">密码
+                  <span class="d-pass"><input data-pass type="password" placeholder="输入密码">
+                    <button class="d-eye" data-eye type="button">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                        <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+                      </svg>
+                    </button>
+                  </span>
+                </label>
+                <label class="d-sw"><input type="checkbox" checked><span class="tr"></span>跳过游戏内登录框</label>
+                <button class="d-launch" data-launch><span data-btntxt>启 动 游 戏</span></button>
+                <div class="d-pre">
+                  <div class="p"><i class="ok"></i>客户端文件已定位<b>FOUND</b></div>
+                  <div class="p"><i class="idle"></i>服务器连通性<b data-ping>检测</b></div>
+                </div>
+                <div class="d-status" data-status data-state="ok"><i class="dot"></i><span data-status-text>就绪 · 等待接入</span></div>
+              </div>
+            </div>
+            <div class="d-rail">
+              <div class="d-panel">
+                <div class="hd"><span>服务器 / SERVER</span><i data-ping>● 检测</i></div>
+                <div class="d-srv">
+                  <div class="addr" data-target>127.0.0.1:30002</div>
+                  <div class="row"><span>延迟</span><b>—</b></div>
+                  <div class="row"><span>客户端文件</span><b>FOUND</b></div>
+                </div>
+              </div>
+              <div class="d-panel">
+                <div class="hd"><span>公告 / NEWS</span><i>03</i></div>
+                <div class="d-nitem hot"><em>11.01</em><span>万圣节活动开启，灾变模式双倍经验</span></div>
+                <div class="d-nitem"><em>10.28</em><span>「冰封废墟」掉线问题已修复</span></div>
+                <div class="d-nitem"><em>10.21</em><span>客户端补丁 v43.2 发布</span></div>
+              </div>
+              <div class="d-panel">
+                <div class="hd"><span>客户端 / CLIENT</span><i>43.2</i></div>
+                <div class="d-rows">
+                  <div><span>构建</span><b>WIN-X64</b></div>
+                  <div><span>目录</span><b>Bin\</b></div>
+                  <div><span>补丁</span><b>10.21</b></div>
+                </div>
+              </div>
+              <div class="d-actions">
+                <button class="d-ghost">主服务器</button>
+                <button class="d-ghost">游戏目录</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-marquee">
+          <div class="d-track">
+            <span><b>ZOMBIE ESCAPE</b> 灾变模式 · 双倍经验</span><span><i>NEW</i> 万圣节限定武器上架</span><span><b>SEASON 04</b> 排位赛季进行中</span><span>非官方服务器 · 请勿使用正式服账号</span>
+            <span><b>ZOMBIE ESCAPE</b> 灾变模式 · 双倍经验</span><span><i>NEW</i> 万圣节限定武器上架</span><span><b>SEASON 04</b> 排位赛季进行中</span><span>非官方服务器 · 请勿使用正式服账号</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec"><dt>Design language</dt><dd>洋红/青/紫三段渐变、玻璃拟态、斜切卡片、超大标题。</dd></div>
+      <div class="spec"><dt>Motion</dt><dd>跑马灯、渐变描边流动、按钮辉光；动效最多，最耗性能。</dd></div>
+      <div class="spec"><dt>WPF 成本</dt><dd><span class="stars">★★★☆</span> 渐变描边与跑马灯需自定义 Template / Canvas，约 2 天。</dd></div>
+      <div class="spec"><dt>适合</dt><dd>社区向、年轻化、想靠启动器「出圈」的服务器。</dd></div>
+    </div>
+  </section>
+
+  <!-- ============ 对比表 ============ -->
+  <section class="sect">
+    <h2>四种方案的取舍</h2>
+    <p class="sub">同一套功能，四种气质 —— 选一个方向，我再把它落成真正的 XAML。</p>
+    <table class="cmp">
+      <thead>
+        <tr><th>维度</th><th><span class="dot-s" style="background:#ff6a00"></span>A 暗夜战术</th><th><span class="dot-s" style="background:#9dff3d"></span>B 生化危机</th><th><span class="dot-s" style="background:#ff5a1f"></span>C 极简光面</th><th><span class="dot-s" style="background:#ff2d8a"></span>D 霓虹街机</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>视觉气质</td><td><b>军事 / 竞技</b></td><td>恐怖 / 灾变</td><td>工具 / 清爽</td><td>赛博 / 潮流</td></tr>
+        <tr><td>辨识度</td><td>高</td><td>高</td><td>中</td><td><b>最高</b></td></tr>
+        <tr><td>信息密度</td><td>中高</td><td>中</td><td>低</td><td>中高</td></tr>
+        <tr><td>动效成本</td><td>低</td><td>中</td><td><b>极低</b></td><td>高</td></tr>
+        <tr><td>XAML 工作量</td><td>约 1 天</td><td>约 1.5 天</td><td><b>约半天</b></td><td>2 天+</td></tr>
+        <tr><td>主要风险</td><td>偏「硬」不够亲民</td><td>绿色在暗光下对比度低</td><td>缺少游戏感</td><td>容易显得花哨</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 可选功能 ============ -->
+  <section class="sect">
+    <h2>顺手可以一起加的功能</h2>
+    <p class="sub">这些在稿子里已占好位置，勾选后才实现，不勾选不影响视觉方案。</p>
+    <div class="opt-grid">
+      <div class="opt"><h3>记住账号 <span>低成本</span></h3><p>用 DPAPI 加密存到用户目录，下次自动填 IP / 账号，密码可选。</p></div>
+      <div class="opt"><h3>服务器连通检测 <span>低成本</span></h3><p>启动前 TcpClient 探测一次（800ms 超时），不通就直接提示，不白等。</p></div>
+      <div class="opt"><h3>客户端自检 <span>低成本</span></h3><p>把现有的 FindGameLauncher 结果显式展示出来，缺文件时给出可点击的路径提示。</p></div>
+      <div class="opt"><h3>启动主服务器 <span>低成本</span></h3><p>复用现有 CSNZ_Server.exe 逻辑，一键起服再进游戏，单人测试很省事。</p></div>
+      <div class="opt"><h3>公告 / 更新日志 <span>中成本</span></h3><p>读取本地 news.txt，或拉取一份远程 JSON；离线时静默隐藏该区块。</p></div>
+      <div class="opt"><h3>自动更新 <span>高成本</span></h3><p>需要补丁包与校验流程，建议单独立项，不放进本次 UI 改版。</p></div>
+    </div>
+  </section>
+
+  <div class="next">
+    <b>下一步：</b>告诉我你选哪一套（例如「A，但按钮换成 B 的绿色」这种混搭也行），以及上面哪些可选功能要保留。
+    确认后我再动手改 <kbd>MainWindow.xaml</kbd>，并保留现有 <kbd>StartButton_Click</kbd> 的全部参数逻辑与目录查找行为。
+  </div>
+</div>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+  var cases = Array.prototype.slice.call(document.querySelectorAll('.case'));
+
+  function activate(key) {
+    tabs.forEach(function (t) { t.classList.toggle('on', t.dataset.tab === key); });
+    cases.forEach(function (c) { c.classList.toggle('on', c.id === 'case-' + key); });
+    try { history.replaceState(null, '', '#' + key); } catch (e) {}
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { activate(t.dataset.tab); });
+  });
+  var initial = (location.hash || '').replace('#', '');
+  var only = new URLSearchParams(location.search).get('only');
+  if (only && document.getElementById('case-' + only)) activate(only);
+  else if (initial && document.getElementById('case-' + initial)) activate(initial);
+
+  document.addEventListener('keydown', function (e) {
+    if (/^[1-4]$/.test(e.key) && !/input|textarea/i.test((e.target.tagName || ''))) {
+      activate(['a', 'b', 'c', 'd'][Number(e.key) - 1]);
+    }
+  });
+
+  // 密码可见性
+  document.querySelectorAll('[data-eye]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = btn.parentNode.querySelector('input');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  });
+
+  // 输入时更新读数
+  document.querySelectorAll('.win').forEach(function (win) {
+    var ip = win.querySelector('[data-ip]');
+    var port = win.querySelector('[data-port]');
+    var target = win.querySelector('[data-target]');
+    if (!target) return;
+    function sync() { target.textContent = (ip.value || '-') + (port.value ? ' : ' + port.value : ''); }
+    ip.addEventListener('input', sync);
+    port.addEventListener('input', sync);
+  });
+
+  // 连通性检测模拟（真实程序里是每秒自动轮询，这里保留手动触发）
+  function runProbe(out, trigger) {
+    if (!out || trigger.dataset.busy) return;
+    trigger.dataset.busy = '1';
+    out.textContent = '检测中…';
+    setTimeout(function () {
+      out.textContent = '在线 · ' + (3 + Math.floor(Math.random() * 9)) + ' ms';
+      trigger.dataset.busy = '';
+    }, 600);
+  }
+
+  document.querySelectorAll('[data-ping]').forEach(function (el) {
+    el.addEventListener('click', function () { runProbe(el, el); });
+  });
+
+  document.querySelectorAll('[data-ping-btn]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var win = btn.closest('.win');
+      runProbe(win ? win.querySelector('[data-ping]') : null, btn);
+    });
+  });
+
+  // 启动模拟
+  document.querySelectorAll('[data-launch]').forEach(function (btn) {
+    var win = btn.closest('.win');
+    var status = win.querySelector('[data-status]');
+    var txt = win.querySelector('[data-status-text]');
+    var label = win.querySelector('[data-btntxt]');
+    var user = win.querySelector('[data-user]');
+    var pass = win.querySelector('[data-pass]');
+    var original = label ? label.textContent : btn.textContent;
+    var busy = false;
+
+    function setStatus(state, text) {
+      status.dataset.state = state;
+      txt.textContent = text;
+    }
+
+    btn.addEventListener('click', function () {
+      if (busy) return;
+      if (!user.value.trim()) {
+        setStatus('err', '请填写用户名。');
+        user.focus();
+        user.classList.remove('shake'); void user.offsetWidth; user.classList.add('shake');
+        return;
+      }
+      if (!pass.value.trim()) {
+        setStatus('err', '请填写密码。');
+        pass.focus();
+        pass.classList.remove('shake'); void pass.offsetWidth; pass.classList.add('shake');
+        return;
+      }
+      busy = true;
+      btn.disabled = true;
+      if (label) label.textContent = '正在启动…';
+      setStatus('load', '定位 Bin\CSOLauncher.exe …');
+      setTimeout(function () {
+        setStatus('ok', '已启动游戏客户端。');
+        if (label) label.textContent = '已启动';
+        setTimeout(function () {
+          busy = false;
+          btn.disabled = false;
+          if (label) label.textContent = original;
+          setStatus('ok', '就绪 · 等待下一次启动');
+        }, 2200);
+      }, 900);
+    });
+  });
+
+  // 适配窄屏：整体缩放而非溢出
+  function fit() {
+    document.querySelectorAll('.stage').forEach(function (stage) {
+      var win = stage.querySelector('.win');
+      if (!win) return;
+      var w = parseFloat(getComputedStyle(win).width);
+      var avail = stage.clientWidth - 52;
+      var s = Math.min(1, avail / w);
+      win.style.zoom = s < 0.99 ? s.toFixed(3) : '';
+    });
+  }
+  window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
+</body>
+</html>

@@ -28,13 +28,13 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore Launcher/CSNZ.Launcher.csproj
+        run: dotnet restore src/CSNZ.Launcher/CSNZ.Launcher.csproj
 
       - name: Build
-        run: dotnet build Launcher/CSNZ.Launcher.csproj -c Release --no-restore
+        run: dotnet build src/CSNZ.Launcher/CSNZ.Launcher.csproj -c Release --no-restore
 
       - name: Publish
-        run: dotnet publish Launcher/CSNZ.Launcher.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o dist
+        run: dotnet publish src/CSNZ.Launcher/CSNZ.Launcher.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o dist
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

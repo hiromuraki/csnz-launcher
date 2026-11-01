@@ -16,9 +16,16 @@ using System.Windows.Threading;
 
 namespace CSNZ.Launcher;
 
+public enum GameKind
+{
+    Csnz,
+    Cso2,
+}
+
 public partial class MainWindow : Window
 {
-    private const string GameLauncherFileName = "CSOLauncher.exe";
+    private const string CsnzGameId = "csnz";
+    private const string Cso2GameId = "cso2";
 
     private const string CompatLayersKey = @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers";
     private const string HighDpiFlag = "HIGHDPIAWARE";
@@ -36,115 +43,440 @@ public partial class MainWindow : Window
 
     private static readonly Brush NormalStatusBrush = new SolidColorBrush(Color.FromRgb(0x87, 0x92, 0x9D));
     private static readonly Brush ErrorStatusBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x7A));
-    private static readonly Brush ValueBrush = new SolidColorBrush(Color.FromRgb(0xDF, 0xE7, 0xEF));
     private static readonly Brush OnlineBrush = new SolidColorBrush(OnlineColor);
-    private static readonly Brush OfflineBrush = new SolidColorBrush(OfflineColor);
+    private static readonly Brush InactiveTabBrush = new SolidColorBrush(Color.FromRgb(0x8B, 0x95, 0x9F));
+    private static readonly Brush ActiveTabBrush = Brushes.White;
+    private static readonly Brush TabDotMissingBrush = new SolidColorBrush(Color.FromArgb(0x40, 0x8B, 0x95, 0x9F));
+    private static readonly Brush TabBackgroundActive = new SolidColorBrush(Color.FromArgb(0x1C, 0xFF, 0x6A, 0x00));
+    private static readonly Brush BadgeBorderActive = new SolidColorBrush(Color.FromRgb(0xFF, 0x6A, 0x00));
+    private static readonly Brush BadgeBorderIdle = new SolidColorBrush(Color.FromRgb(0x33, 0x3D, 0x47));
+    private static readonly Brush BadgeTextActive = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x3D));
+    private static readonly Brush BadgeTextIdle = new SolidColorBrush(Color.FromRgb(0x7B, 0x87, 0x94));
+    private static readonly Brush TabSubActive = new SolidColorBrush(Color.FromRgb(0x8A, 0x94, 0x9F));
+    private static readonly Brush TabSubIdle = new SolidColorBrush(Color.FromRgb(0x5D, 0x68, 0x73));
 
-    private readonly DispatcherTimer _pingTimer = new()
-    {
-        Interval = TimeSpan.FromSeconds(1),
-    };
+    private readonly DispatcherTimer _pingTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
+    private LauncherConfig _config = new();
+    private GameKind _activeGame = GameKind.Csnz;
     private bool _passwordVisible;
     private bool _pinging;
-    private bool _dpiToggleRestored;
+    private bool _applying;
 
     public MainWindow()
     {
         InitializeComponent();
-        _pingTimer.Tick += (_, _) => _ = ProbeAsync(showProgress: false);
+        _pingTimer.Tick += (_, _) => _ = ProbeAsync(false);
         Loaded += OnLoaded;
     }
+
+    // ================= 启动流程 =================
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         bool configOk = LoadConfig();
-
-        // launcher.json 里没有记录过这项时，按当前显示器缩放给默认值。
-        if (!_dpiToggleRestored)
-        {
-            FixDpiCheckBox.IsChecked = IsHighDpiDisplay();
-        }
+        EnsureProfiles();
+        DetectGames();
+        ApplyActiveProfile();
 
         DpiScaleText.Text = CurrentDpiText();
 
+        _pingTimer.Start();
+        _ = ProbeAsync(false);
+
         IpBox.Focus();
         IpBox.CaretIndex = IpBox.Text.Length;
-        UpdateTargetReadout();
-        CheckClient();
 
         if (!configOk)
         {
             SetStatus("launcher.json 读取失败，已使用默认配置。", true);
         }
-
-        _pingTimer.Start();
-        _ = ProbeAsync(showProgress: false);
     }
 
-    // ================= 启动 =================
-
-    private void StartButton_Click(object sender, RoutedEventArgs e)
+    private bool LoadConfig()
     {
-        string ip = IpBox.Text.Trim();
-        if (ip.Length == 0)
+        try
         {
-            ShowValidationError(IpBox, "请填写 IP 地址。");
-            return;
+            if (!File.Exists(ConfigPath))
+            {
+                _config = new LauncherConfig();
+                return true;
+            }
+
+            var config = JsonSerializer.Deserialize<LauncherConfig>(File.ReadAllText(ConfigPath));
+            if (config is null)
+            {
+                _config = new LauncherConfig();
+                return false;
+            }
+
+            if (config.Csnz is null && config.LegacyIp is not null)
+            {
+                config.Csnz = new CsnzProfile
+                {
+                    Ip = config.LegacyIp,
+                    Port = config.LegacyPort ?? 30002,
+                    Login = config.LegacyLogin ?? string.Empty,
+                    Password = config.LegacyPassword ?? string.Empty,
+                    DisableAuthUi = config.LegacyDisableAuthUi ?? true,
+                    FixDpi = config.LegacyFixDpi ?? true,
+                };
+            }
+
+            _config = config;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
+        {
+            _config = new LauncherConfig();
+            return false;
+        }
+    }
+
+    private void EnsureProfiles()
+    {
+        bool highDpi = IsHighDpiDisplay();
+
+        _config.Csnz ??= new CsnzProfile { FixDpi = highDpi };
+        _config.Cso2 ??= new Cso2Profile { FixDpi = highDpi };
+
+        Normalize(_config.Csnz, 30002, @"Bin\CSOLauncher.exe");
+        Normalize(_config.Cso2, 30001, @"Bin\launcher.exe");
+
+        _activeGame = string.Equals(_config.ActiveGame, Cso2GameId, StringComparison.OrdinalIgnoreCase)
+            ? GameKind.Cso2
+            : GameKind.Csnz;
+    }
+
+    private static void Normalize(ProfileBase profile, int defaultPort, string defaultFeature)
+    {
+        if (profile.Port is < 1 or > 65535)
+        {
+            profile.Port = defaultPort;
         }
 
-        if (!int.TryParse(PortBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port)
-            || port < 1 || port > 65535)
+        if (profile.FeatureFiles.Count == 0)
         {
-            ShowValidationError(PortBox, "端口必须是 1 到 65535 之间的数字。");
-            return;
+            profile.FeatureFiles.Add(defaultFeature);
         }
 
-        string login = LoginBox.Text;
-        if (string.IsNullOrWhiteSpace(login))
+        profile.GameDir = NormalizeDir(profile.GameDir);
+        profile.Ip = string.IsNullOrWhiteSpace(profile.Ip) ? "127.0.0.1" : profile.Ip.Trim();
+        profile.Login ??= string.Empty;
+        profile.Password ??= string.Empty;
+    }
+
+    private void DetectGames()
+    {
+        var csnz = _config.Csnz!;
+        var cso2 = _config.Cso2!;
+
+        string? csnzDir = DetectGameDir(csnz.FeatureFiles);
+        string? cso2Dir = DetectGameDir(cso2.FeatureFiles);
+
+        if (!HasFeature(csnz.GameDir, csnz.FeatureFiles) && csnzDir is not null)
         {
-            ShowValidationError(LoginBox, "请填写用户名。");
-            return;
+            csnz.GameDir = csnzDir;
         }
 
-        SyncPasswordFromEditor();
-        string password = PasswordBox.Password;
-        if (password.Length == 0)
+        if (!HasFeature(cso2.GameDir, cso2.FeatureFiles) && cso2Dir is not null)
         {
-            ShowValidationError(_passwordVisible ? PasswordText : PasswordBox, "请填写密码。");
-            return;
+            cso2.GameDir = cso2Dir;
         }
 
-        string? gameLauncher = FindGameLauncher();
-        if (gameLauncher is null)
+        if (!IsProfileUsable(CurrentProfile()) && IsProfileUsable(OtherProfile()))
         {
-            SetStatus("找不到 " + GameLauncherFileName + "，请把启动器放在游戏目录中。", true);
-            return;
+            _activeGame = _activeGame == GameKind.Csnz ? GameKind.Cso2 : GameKind.Csnz;
+        }
+
+        _config.ActiveGame = _activeGame == GameKind.Csnz ? CsnzGameId : Cso2GameId;
+    }
+
+    private static string? DetectGameDir(IReadOnlyList<string> featureFiles)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        for (int depth = 0; dir is not null && depth < 3; depth++, dir = dir.Parent)
+        {
+            if (HasFeature(dir.FullName, featureFiles))
+            {
+                return NormalizeDir(dir.FullName);
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeDir(string dir)
+    {
+        string trimmed = (dir ?? string.Empty).Trim();
+        return trimmed.Length > 3 ? trimmed.TrimEnd('\\', '/') : trimmed;
+    }
+
+    private static bool HasFeature(string? dir, IReadOnlyList<string> files)
+    {
+        if (string.IsNullOrWhiteSpace(dir) || files.Count == 0)
+        {
+            return false;
         }
 
         try
         {
-            ApplyDpiCompatibility(gameLauncher, FixDpiCheckBox.IsChecked == true);
-
-            var startInfo = new ProcessStartInfo(gameLauncher)
+            if (!Directory.Exists(dir))
             {
-                WorkingDirectory = Path.GetDirectoryName(gameLauncher)!,
-                UseShellExecute = true,
-            };
-            startInfo.ArgumentList.Add("-ip");
-            startInfo.ArgumentList.Add(ip);
-            startInfo.ArgumentList.Add("-port");
-            startInfo.ArgumentList.Add(port.ToString(CultureInfo.InvariantCulture));
-            startInfo.ArgumentList.Add("-login");
-            startInfo.ArgumentList.Add(login);
-            startInfo.ArgumentList.Add("-password");
-            startInfo.ArgumentList.Add(password);
-
-            if (DisableAuthUiCheckBox.IsChecked == true)
-            {
-                startInfo.ArgumentList.Add("-disableauthui");
+                return false;
             }
 
+            foreach (string file in files)
+            {
+                if (!string.IsNullOrWhiteSpace(file) && File.Exists(Path.Combine(dir, file)))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    // ================= 面板 =================
+
+    private ProfileBase CurrentProfile()
+    {
+        return _activeGame == GameKind.Csnz ? _config.Csnz! : _config.Cso2!;
+    }
+
+    private ProfileBase OtherProfile()
+    {
+        return _activeGame == GameKind.Csnz ? _config.Cso2! : _config.Csnz!;
+    }
+
+    private bool IsProfileUsable(ProfileBase profile)
+    {
+        return HasFeature(profile.GameDir, profile.FeatureFiles);
+    }
+
+    private void ApplyActiveProfile()
+    {
+        _applying = true;
+        var profile = CurrentProfile();
+        DirBox.Text = profile.GameDir;
+        IpBox.Text = profile.Ip;
+        PortBox.Text = profile.Port.ToString(CultureInfo.InvariantCulture);
+        LoginBox.Text = profile.Login;
+        PasswordBox.Password = profile.Password;
+        PasswordText.Text = profile.Password;
+        OptionToggle.IsChecked = profile.Option;
+        FixDpiCheckBox.IsChecked = profile.FixDpi;
+        _applying = false;
+
+        bool cso2 = _activeGame == GameKind.Cso2;
+        CsnzBrand.Visibility = cso2 ? Visibility.Collapsed : Visibility.Visible;
+        Cso2Brand.Visibility = cso2 ? Visibility.Visible : Visibility.Collapsed;
+        CsnzPoster.Visibility = cso2 ? Visibility.Collapsed : Visibility.Visible;
+        Cso2Poster.Visibility = cso2 ? Visibility.Visible : Visibility.Collapsed;
+        LaunchText.Text = cso2 ? "启动 CSO2" : "启动游戏";
+        Title = cso2 ? "CSO2 启动器" : "CSNZ 启动器";
+
+        UpdateOptionLabel();
+        UpdateTabVisuals();
+        UpdateFeatureHint();
+        UpdateTargetReadout();
+        SetLink("待检测", NormalStatusBrush);
+        SetStatusReady();
+    }
+
+    private void CommitProfile()
+    {
+        var profile = CurrentProfile();
+        profile.GameDir = NormalizeDir(DirBox.Text);
+        profile.Ip = IpBox.Text.Trim();
+        if (int.TryParse(PortBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port))
+        {
+            profile.Port = port;
+        }
+
+        profile.Login = LoginBox.Text;
+        profile.Password = _passwordVisible ? PasswordText.Text : PasswordBox.Password;
+        profile.Option = OptionToggle.IsChecked == true;
+        profile.FixDpi = FixDpiCheckBox.IsChecked == true;
+    }
+
+    private void SwitchTo(GameKind kind)
+    {
+        if (kind == _activeGame)
+        {
+            return;
+        }
+
+        CommitProfile();
+        _activeGame = kind;
+        _config.ActiveGame = kind == GameKind.Csnz ? CsnzGameId : Cso2GameId;
+        ApplyActiveProfile();
+        _ = ProbeAsync(false);
+    }
+
+    private void CsnzTab_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchTo(GameKind.Csnz);
+    }
+
+    private void Cso2Tab_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchTo(GameKind.Cso2);
+    }
+
+    private void UpdateTabVisuals()
+    {
+        bool cso2 = _activeGame == GameKind.Cso2;
+        ApplyTab(CsnzTab, CsnzTabBadge, CsnzTabBadgeText, CsnzTabName, CsnzTabSub, !cso2);
+        ApplyTab(Cso2Tab, Cso2TabBadge, Cso2TabBadgeText, Cso2TabName, Cso2TabSub, cso2);
+
+        CsnzTabDot.Fill = IsProfileUsable(_config.Csnz!) ? OnlineBrush : TabDotMissingBrush;
+        Cso2TabDot.Fill = IsProfileUsable(_config.Cso2!) ? OnlineBrush : TabDotMissingBrush;
+    }
+
+    private static void ApplyTab(Button tab, Border badge, TextBlock badgeText, TextBlock name, TextBlock sub, bool active)
+    {
+        tab.Background = active ? TabBackgroundActive : Brushes.Transparent;
+        tab.BorderBrush = active ? BadgeBorderActive : Brushes.Transparent;
+        badge.BorderBrush = active ? BadgeBorderActive : BadgeBorderIdle;
+        badge.Background = active ? TabBackgroundActive : Brushes.Transparent;
+        badgeText.Foreground = active ? BadgeTextActive : BadgeTextIdle;
+        name.Foreground = active ? ActiveTabBrush : InactiveTabBrush;
+        sub.Foreground = active ? TabSubActive : TabSubIdle;
+    }
+
+    private void UpdateOptionLabel()
+    {
+        OptionToggle.Content = _activeGame == GameKind.Cso2 ? "启用自定义内容" : "跳过游戏内登录框";
+        UpdateOptionHint();
+    }
+
+    private void UpdateOptionHint()
+    {
+        bool on = OptionToggle.IsChecked == true;
+        bool cso2 = _activeGame == GameKind.Cso2;
+        OptionHint.Text = cso2
+            ? (on ? "CUSTOM ON" : "CUSTOM OFF")
+            : (on ? "AUTH UI OFF" : "AUTH UI ON");
+    }
+
+    private void OptionToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_applying)
+        {
+            UpdateOptionHint();
+        }
+    }
+
+    private void UpdateFeatureHint()
+    {
+        var profile = CurrentProfile();
+        string relative = profile.FeatureFiles.Count > 0 ? profile.FeatureFiles[0] : string.Empty;
+        bool ok = HasFeature(profile.GameDir, profile.FeatureFiles);
+
+        FeatureHint.Text = (ok ? "✓ 已定位 " : "✗ 未找到 ") + relative;
+        FeatureHint.Foreground = ok ? OnlineBrush : ErrorStatusBrush;
+
+        if (_activeGame == GameKind.Csnz)
+        {
+            CsnzClient.Text = relative;
+        }
+        else
+        {
+            Cso2Client.Text = relative;
+        }
+    }
+
+    private void UpdateTargetReadout()
+    {
+        if (IpBox is null || PortBox is null || CsnzTarget is null || Cso2Target is null)
+        {
+            return;
+        }
+
+        string ip = IpBox.Text.Trim();
+        string port = PortBox.Text.Trim();
+        string text = ip.Length == 0 ? "—" : (port.Length == 0 ? ip : ip + " : " + port);
+
+        if (_activeGame == GameKind.Csnz)
+        {
+            CsnzTarget.Text = text;
+        }
+        else
+        {
+            Cso2Target.Text = text;
+        }
+    }
+
+    private void DirBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_applying)
+        {
+            return;
+        }
+
+        CurrentProfile().GameDir = DirBox.Text.Trim();
+        UpdateFeatureHint();
+        UpdateTabVisuals();
+        SetStatusReady();
+    }
+
+    private void Endpoint_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_applying)
+        {
+            return;
+        }
+
+        UpdateTargetReadout();
+    }
+
+    private void Browse_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "选择游戏目录",
+            InitialDirectory = Directory.Exists(DirBox.Text) ? DirBox.Text : AppContext.BaseDirectory,
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            DirBox.Text = dialog.FolderName;
+            DirBox.CaretIndex = DirBox.Text.Length;
+        }
+    }
+
+    // ================= 启动游戏 =================
+
+    private void StartButton_Click(object sender, RoutedEventArgs e)
+    {
+        CommitProfile();
+        var profile = CurrentProfile();
+
+        if (!ValidateBeforeLaunch(profile))
+        {
+            return;
+        }
+
+        string relative = profile.FeatureFiles[0];
+        string exePath = Path.Combine(profile.GameDir, relative);
+
+        try
+        {
+            ApplyDpiCompatibility(exePath, profile.FixDpi);
+
+            var startInfo = new ProcessStartInfo(exePath)
+            {
+                WorkingDirectory = profile.GameDir,
+                UseShellExecute = true,
+            };
+
+            BuildArguments(startInfo, profile);
             Process.Start(startInfo);
 
             SaveConfig();
@@ -156,39 +488,85 @@ public partial class MainWindow : Window
         }
     }
 
-    // ================= 次操作 =================
-
-    private void OpenDir_Click(object sender, RoutedEventArgs e)
+    private bool ValidateBeforeLaunch(ProfileBase profile)
     {
-        string? launcher = FindGameLauncher();
-        string dir = launcher is not null
-            ? Path.GetDirectoryName(launcher)!
-            : AppContext.BaseDirectory;
-
-        try
+        if (!HasFeature(profile.GameDir, profile.FeatureFiles))
         {
-            Process.Start(new ProcessStartInfo("explorer.exe", "\"" + dir + "\"")
-            {
-                UseShellExecute = true,
-            });
+            string relative = profile.FeatureFiles.Count > 0 ? profile.FeatureFiles[0] : "客户端";
+            SetStatus("游戏目录不正确，找不到 " + relative + "。", true);
+            DirBox.Focus();
+            return false;
         }
-        catch (Exception ex)
+
+        if (string.IsNullOrWhiteSpace(profile.Ip))
         {
-            SetStatus("打开目录失败：" + ex.Message, true);
+            SetStatus("请填写服务器 IP。", true);
+            IpBox.Focus();
+            return false;
+        }
+
+        if (profile.Port is < 1 or > 65535)
+        {
+            SetStatus("端口必须是 1 到 65535 之间的数字。", true);
+            PortBox.Focus();
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(profile.Login))
+        {
+            SetStatus("请填写用户名。", true);
+            LoginBox.Focus();
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(profile.Password))
+        {
+            SetStatus("请填写密码。", true);
+            (_passwordVisible ? (Control)PasswordText : PasswordBox).Focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void BuildArguments(ProcessStartInfo info, ProfileBase profile)
+    {
+        if (profile is CsnzProfile csnz)
+        {
+            info.ArgumentList.Add("-ip");
+            info.ArgumentList.Add(profile.Ip);
+            info.ArgumentList.Add("-port");
+            info.ArgumentList.Add(profile.Port.ToString(CultureInfo.InvariantCulture));
+            info.ArgumentList.Add("-login");
+            info.ArgumentList.Add(profile.Login);
+            info.ArgumentList.Add("-password");
+            info.ArgumentList.Add(profile.Password);
+
+            if (csnz.DisableAuthUi)
+            {
+                info.ArgumentList.Add("-disableauthui");
+            }
+        }
+        else if (profile is Cso2Profile cso2)
+        {
+            info.ArgumentList.Add("-masterip");
+            info.ArgumentList.Add(profile.Ip);
+
+            if (cso2.EnableCustom)
+            {
+                info.ArgumentList.Add("-enablecustom");
+            }
+
+            info.ArgumentList.Add("-decryptedfiles");
+            info.ArgumentList.Add("-username");
+            info.ArgumentList.Add(profile.Login);
+            info.ArgumentList.Add("-password");
+            info.ArgumentList.Add(profile.Password);
         }
     }
 
     // ================= 连通性检测 =================
 
-    private void Ping_Click(object sender, RoutedEventArgs e)
-    {
-        // 手动检测：额外显示一次“检测中…”，自动轮询则不打断已有状态。
-        _ = ProbeAsync(showProgress: true);
-    }
-
-    /// <summary>
-    /// 每秒轮询一次服务器连通性；上一轮未结束时跳过本轮，避免请求堆积。
-    /// </summary>
     private async Task ProbeAsync(bool showProgress)
     {
         if (_pinging)
@@ -199,21 +577,21 @@ public partial class MainWindow : Window
         string ip = IpBox.Text.Trim();
         if (ip.Length == 0)
         {
-            SetPingState("待输入 IP", NormalStatusBrush);
+            SetLink("待输入 IP", NormalStatusBrush);
             return;
         }
 
         if (!int.TryParse(PortBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port)
-            || port < 1 || port > 65535)
+            || port is < 1 or > 65535)
         {
-            SetPingState("端口无效", ErrorStatusBrush);
+            SetLink("端口无效", ErrorStatusBrush);
             return;
         }
 
         _pinging = true;
         if (showProgress)
         {
-            SetPingState("检测中…", NormalStatusBrush);
+            SetLink("检测中…", NormalStatusBrush);
         }
 
         var watch = Stopwatch.StartNew();
@@ -223,15 +601,15 @@ public partial class MainWindow : Window
             using var client = new TcpClient();
             await client.ConnectAsync(ip, port).WaitAsync(TimeSpan.FromMilliseconds(700));
             watch.Stop();
-            SetPingState("在线 · " + watch.ElapsedMilliseconds + " ms", OnlineBrush);
+            SetLink("在线 · " + watch.ElapsedMilliseconds + " ms", OnlineBrush);
         }
         catch (TimeoutException)
         {
-            SetPingState("超时", ErrorStatusBrush);
+            SetLink("超时", ErrorStatusBrush);
         }
         catch
         {
-            SetPingState("离线", ErrorStatusBrush);
+            SetLink("离线", ErrorStatusBrush);
         }
         finally
         {
@@ -239,10 +617,45 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SetPingState(string text, Brush brush)
+    private void SetLink(string text, Brush brush)
     {
-        PingText.Text = text;
-        PingText.Foreground = brush;
+        var target = _activeGame == GameKind.Csnz ? CsnzLink : Cso2Link;
+        target.Text = text;
+        target.Foreground = brush;
+    }
+
+    // ================= 配置持久化 =================
+
+    private void SaveConfig()
+    {
+        try
+        {
+            CommitProfile();
+            _config.ActiveGame = _activeGame == GameKind.Csnz ? CsnzGameId : Cso2GameId;
+            ClearLegacy();
+            File.WriteAllText(ConfigPath, JsonSerializer.Serialize(_config, JsonOptions));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            SetStatus("保存 launcher.json 失败：" + ex.Message, true);
+        }
+    }
+
+    private void ClearLegacy()
+    {
+        _config.LegacyIp = null;
+        _config.LegacyPort = null;
+        _config.LegacyLogin = null;
+        _config.LegacyPassword = null;
+        _config.LegacyDisableAuthUi = null;
+        _config.LegacyFixDpi = null;
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        _pingTimer.Stop();
+        SaveConfig();
+        base.OnClosing(e);
     }
 
     // ================= 界面交互 =================
@@ -276,34 +689,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SyncPasswordFromEditor()
-    {
-        if (_passwordVisible)
-        {
-            PasswordBox.Password = PasswordText.Text;
-        }
-    }
-
-    private void Endpoint_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        UpdateTargetReadout();
-    }
-
-    private void UpdateTargetReadout()
-    {
-        // InitializeComponent 设置 Text 时会触发 TextChanged，此时命名字段尚未赋值。
-        if (TargetText is null || IpBox is null || PortBox is null)
-        {
-            return;
-        }
-
-        string ip = IpBox.Text.Trim();
-        string port = PortBox.Text.Trim();
-        TargetText.Text = ip.Length == 0
-            ? "—"
-            : (port.Length == 0 ? ip : ip + " : " + port);
-    }
-
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left)
@@ -317,7 +702,6 @@ public partial class MainWindow : Window
         }
         catch (InvalidOperationException)
         {
-            // 鼠标已松开时 DragMove 会抛异常，忽略即可。
         }
     }
 
@@ -339,87 +723,28 @@ public partial class MainWindow : Window
         }
     }
 
-    // ================= 配置持久化 =================
+    // ================= 状态 =================
 
-    private bool LoadConfig()
+    private void SetStatus(string message, bool error)
     {
-        try
+        StatusText.Text = message;
+        StatusText.Foreground = error ? ErrorStatusBrush : NormalStatusBrush;
+
+        Color color = error ? OfflineColor : OnlineColor;
+        StatusDot.Fill = new SolidColorBrush(color);
+        if (StatusDot.Effect is DropShadowEffect glow)
         {
-            if (!File.Exists(ConfigPath))
-            {
-                return true;
-            }
-
-            var config = JsonSerializer.Deserialize<LauncherConfig>(File.ReadAllText(ConfigPath));
-            if (config is null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(config.Ip))
-            {
-                IpBox.Text = config.Ip.Trim();
-            }
-
-            if (config.Port is > 0 and <= 65535)
-            {
-                PortBox.Text = config.Port.ToString(CultureInfo.InvariantCulture);
-            }
-
-            LoginBox.Text = config.Login;
-            PasswordBox.Password = config.Password;
-            PasswordText.Text = config.Password;
-            DisableAuthUiCheckBox.IsChecked = config.DisableAuthUi;
-
-            if (config.FixDpi.HasValue)
-            {
-                FixDpiCheckBox.IsChecked = config.FixDpi.Value;
-                _dpiToggleRestored = true;
-            }
-
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
-        {
-            return false;
+            glow.Color = color;
         }
     }
 
-    private void SaveConfig()
+    private void SetStatusReady()
     {
-        try
-        {
-            SyncPasswordFromEditor();
-
-            var config = new LauncherConfig
-            {
-                Ip = IpBox.Text.Trim(),
-                Port = int.TryParse(PortBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port)
-                       && port is >= 1 and <= 65535
-                    ? port
-                    : 30002,
-                Login = LoginBox.Text,
-                Password = PasswordBox.Password,
-                DisableAuthUi = DisableAuthUiCheckBox.IsChecked == true,
-                FixDpi = FixDpiCheckBox.IsChecked == true,
-            };
-
-            File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config, JsonOptions));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
-        {
-            SetStatus("保存 launcher.json 失败：" + ex.Message, true);
-        }
+        bool ok = IsProfileUsable(CurrentProfile());
+        SetStatus(ok ? "就绪 · 客户端已定位" : "未定位 · 请选择游戏目录", !ok);
     }
 
-    protected override void OnClosing(CancelEventArgs e)
-    {
-        _pingTimer.Stop();
-        SaveConfig();
-        base.OnClosing(e);
-    }
-
-    // ================= DPI 兼容性 =================
+    // ================= DPI =================
 
     private bool IsHighDpiDisplay()
     {
@@ -433,11 +758,6 @@ public partial class MainWindow : Window
         return Math.Round(dpi.DpiScaleX * 100).ToString(CultureInfo.InvariantCulture) + "%";
     }
 
-    /// <summary>
-    /// 高 DPI 兼容性设置是「每用户 + 每个 exe」的注册表项（HKCU\...\AppCompatFlags\Layers），
-    /// Windows 在创建进程时读取它；进程一旦跑起来就改不了自己的 DPI 感知，
-    /// 所以只能在启动游戏之前写入，对紧接着创建的游戏进程立即生效。
-    /// </summary>
     private static void ApplyDpiCompatibility(string exePath, bool enabled)
     {
         try
@@ -469,96 +789,51 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException or InvalidOperationException)
         {
-            // 写不进去也不该拦住启动。
         }
     }
 
-    // ================= 状态与查找 =================
+    // ================= 配置模型 =================
 
-    private void CheckClient()
-    {
-        string? launcher = FindGameLauncher();
-        if (launcher is null)
-        {
-            ClientPathText.Text = "未找到 " + GameLauncherFileName;
-            ClientPathText.Foreground = ErrorStatusBrush;
-            SetStatus("未找到客户端，请把启动器放进游戏目录。", true);
-            return;
-        }
-
-        ClientPathText.Text = ShortClientPath(launcher);
-        ClientPathText.ToolTip = launcher;
-        ClientPathText.Foreground = ValueBrush;
-        SetStatus("就绪 · 客户端文件已定位", false);
-    }
-
-    private void ShowValidationError(Control control, string message)
-    {
-        SetStatus(message, true);
-        control.Focus();
-    }
-
-    private void SetStatus(string message, bool error)
-    {
-        StatusText.Text = message;
-        StatusText.Foreground = error ? ErrorStatusBrush : NormalStatusBrush;
-
-        Color color = error ? OfflineColor : OnlineColor;
-        StatusDot.Fill = new SolidColorBrush(color);
-        if (StatusDot.Effect is DropShadowEffect glow)
-        {
-            glow.Color = color;
-        }
-    }
-
-    /// <summary>
-    /// 读数条空间有限：位于 Bin 目录时显示 Bin\\xxx，否则只显示文件名，完整路径放在提示里。
-    /// </summary>
-    private static string ShortClientPath(string path)
-    {
-        string? dir = Path.GetDirectoryName(path);
-        if (dir is not null && string.Equals(Path.GetFileName(dir), "Bin", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Bin\\" + Path.GetFileName(path);
-        }
-
-        return Path.GetFileName(path);
-    }
-
-    /// <summary>
-    /// 从启动器所在目录逐级向上查找 Bin\CSOLauncher.exe 或同目录下的 CSOLauncher.exe。
-    /// </summary>
-    private static string? FindGameLauncher()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        for (int depth = 0; dir is not null && depth < 8; depth++, dir = dir.Parent)
-        {
-            string direct = Path.Combine(dir.FullName, GameLauncherFileName);
-            if (File.Exists(direct))
-            {
-                return direct;
-            }
-
-            string inBin = Path.Combine(dir.FullName, "Bin", GameLauncherFileName);
-            if (File.Exists(inBin))
-            {
-                return inBin;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// launcher.json 的结构，与启动器同目录、明文保存。
-    /// </summary>
     private sealed class LauncherConfig
     {
+        [JsonPropertyName("activeGame")]
+        public string ActiveGame { get; set; } = CsnzGameId;
+
+        [JsonPropertyName("csnz")]
+        public CsnzProfile? Csnz { get; set; }
+
+        [JsonPropertyName("cso2")]
+        public Cso2Profile? Cso2 { get; set; }
+
+        [JsonPropertyName("ip"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyIp { get; set; }
+
+        [JsonPropertyName("port"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? LegacyPort { get; set; }
+
+        [JsonPropertyName("login"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyLogin { get; set; }
+
+        [JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyPassword { get; set; }
+
+        [JsonPropertyName("disableAuthUi"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? LegacyDisableAuthUi { get; set; }
+
+        [JsonPropertyName("fixDpi"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? LegacyFixDpi { get; set; }
+    }
+
+    private abstract class ProfileBase
+    {
+        [JsonPropertyName("gameDir")]
+        public string GameDir { get; set; } = string.Empty;
+
         [JsonPropertyName("ip")]
         public string Ip { get; set; } = "127.0.0.1";
 
         [JsonPropertyName("port")]
-        public int Port { get; set; } = 30002;
+        public int Port { get; set; }
 
         [JsonPropertyName("login")]
         public string Login { get; set; } = string.Empty;
@@ -566,11 +841,39 @@ public partial class MainWindow : Window
         [JsonPropertyName("password")]
         public string Password { get; set; } = string.Empty;
 
-        [JsonPropertyName("disableAuthUi")]
-        public bool DisableAuthUi { get; set; }
-
         [JsonPropertyName("fixDpi")]
-        public bool? FixDpi { get; set; }
+        public bool FixDpi { get; set; } = true;
+
+        [JsonPropertyName("featureFiles")]
+        public List<string> FeatureFiles { get; set; } = new();
+
+        [JsonIgnore]
+        public abstract bool Option { get; set; }
     }
 
+    private sealed class CsnzProfile : ProfileBase
+    {
+        [JsonPropertyName("disableAuthUi")]
+        public bool DisableAuthUi { get; set; } = true;
+
+        [JsonIgnore]
+        public override bool Option
+        {
+            get => DisableAuthUi;
+            set => DisableAuthUi = value;
+        }
+    }
+
+    private sealed class Cso2Profile : ProfileBase
+    {
+        [JsonPropertyName("enableCustom")]
+        public bool EnableCustom { get; set; } = true;
+
+        [JsonIgnore]
+        public override bool Option
+        {
+            get => EnableCustom;
+            set => EnableCustom = value;
+        }
+    }
 }

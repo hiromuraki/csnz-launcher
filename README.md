@@ -8,7 +8,7 @@ WPF / .NET 10，无边框深色界面，单文件发布，不依赖管理员权�
 
 ## 功能
 
-- 启动时把 `-ip` `-port` `-login` `-password`（可选 `-disableauthui`）传给 `Bin\\CSOLauncher.exe`
+- 启动时把 `-ip` `-port` `-login` `-password`（可选 `-disableauthui`）传给 `Bin\CSOLauncher.exe`
 - 每秒轮询服务器连通性，保留手动「检测」按钮
 - 配置持久化到 exe 同目录的 `launcher.json`（明文）
 - 「修复 DPI」：启动前为游戏客户端写入 `~ HIGHDPIAWARE` 兼容性标记，解决非 100% 缩放下发虚
@@ -59,3 +59,7 @@ git push origin v1.0.0
 ## 设计稿
 
 `docs/design-preview.html` 是最初的四套方案对比页（A 方案已落地），浏览器直接打开即可。
+
+## 许可
+
+本项目基于 [GNU General Public License v3.0](LICENSE) 发布。

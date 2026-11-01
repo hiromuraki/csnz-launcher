@@ -470,9 +470,15 @@ public partial class MainWindow : Window
         {
             ApplyDpiCompatibility(exePath, profile.FixDpi);
 
+            // 工作目录必须是客户端 exe 所在目录，而不是游戏根目录。
+            // hw.dll 初始化时会按当前工作目录找 client.dll / mp.dll / gameui.dll 等模块，
+            // 从根目录启动会让 TS2 检查得到 GetLastError 2 (ERROR_FILE_NOT_FOUND)，
+            // 弹出 "TS2,1 / GetLastError 0x2" 报错框（游戏本身仍能跑起来）。
+            string workingDirectory = Path.GetDirectoryName(exePath) ?? profile.GameDir;
+
             var startInfo = new ProcessStartInfo(exePath)
             {
-                WorkingDirectory = profile.GameDir,
+                WorkingDirectory = workingDirectory,
                 UseShellExecute = true,
             };
 

@@ -647,7 +647,7 @@
                             <!-- 跳过登录框 -->
                             <Grid Grid.Row="4" Margin="0,13,0,0">
                                 <CheckBox x:Name="DisableAuthUiCheckBox" Style="{StaticResource SwitchCheckBox}"
-                                          Content="跳过游戏内登录框" VerticalAlignment="Center"/>
+                                          Content="跳过游戏内登录框" IsChecked="True" VerticalAlignment="Center"/>
                                 <TextBlock FontFamily="Consolas" FontSize="9" Foreground="#5D6873"
                                            HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <TextBlock.Style>
